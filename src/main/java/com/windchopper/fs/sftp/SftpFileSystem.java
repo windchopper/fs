@@ -7,6 +7,8 @@ import com.jcraft.jsch.SftpException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
@@ -18,23 +20,23 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toList;
 
-public class SftpFileSystem extends FileSystem {
+public class SftpFileSystem extends FileSystem implements SftpConstants {
 
     private final SftpFileSystemProvider provider;
-    private final SftpPeerIdentity peerIdentity;
+    private final SftpFileSystemEnvironment environment;
 
     private final Session session;
     private final List<ChannelSftp.LsEntry> rootEntries;
 
     @SuppressWarnings("unchecked")
-    SftpFileSystem(SftpFileSystemProvider provider, SftpPeerIdentity peerIdentity, String password) throws IOException {
+    SftpFileSystem(SftpFileSystemProvider provider, SftpFileSystemEnvironment environment) throws IOException {
         this.provider = provider;
-        this.peerIdentity = peerIdentity;
+        this.environment = environment;
 
         try {
-            session = provider.jsch.getSession(peerIdentity.username, peerIdentity.host, peerIdentity.port);
+            session = provider.jsch.getSession(environment.peerIdentity.username, environment.peerIdentity.host, environment.peerIdentity.port);
             session.setConfig("StrictHostKeyChecking", "no");
-            session.setPassword(password);
+            session.setPassword(environment.password);
             session.connect();
 
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
@@ -54,13 +56,23 @@ public class SftpFileSystem extends FileSystem {
         return provider;
     }
 
+    URI composeUri(String pathString) {
+        try {
+            return new URI(SCHEME, environment.peerIdentity.username, environment.peerIdentity.host, environment.peerIdentity.port,
+                pathString, null, null);
+        } catch (URISyntaxException thrown) {
+            throw new IllegalArgumentException(
+                String.format("Invalid path: %s", pathString));
+        }
+    }
+
     @Override public void close() {
         session.disconnect();
-        provider.fileSystems.remove(peerIdentity);
+        provider.retire(environment.peerIdentity, this);
     }
 
     @Override public boolean isOpen() {
-        return true;
+        return session.isConnected();
     }
 
     @Override public boolean isReadOnly() {
@@ -68,7 +80,24 @@ public class SftpFileSystem extends FileSystem {
     }
 
     @Override public String getSeparator() {
-        return SftpPath.SEPARATOR;
+        return SEPARATOR;
+    }
+
+    String realPath(String pathString) throws IOException {
+        try {
+            ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
+            channelSftp.connect();
+
+            try {
+                return channelSftp.realpath(pathString);
+            } finally {
+                channelSftp.disconnect();
+            }
+        } catch (JSchException | SftpException thrown) {
+            throw new IOException(
+                String.format("Couldn't resolve path %s", pathString),
+                thrown);
+        }
     }
 
     @Override public Iterable<Path> getRootDirectories() {
