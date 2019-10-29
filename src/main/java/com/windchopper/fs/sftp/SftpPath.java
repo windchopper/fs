@@ -83,12 +83,25 @@ public class SftpPath implements Path, SftpConstants {
             String.format("Begin index %d out of bounds", fromIndex));
     }
 
+    ProviderMismatchException foreignPath(Path path) {
+        return new ProviderMismatchException(
+            String.format("Path of type %s is not belonging to used provider", path.getClass().getCanonicalName()));
+    }
+
     @Override public boolean startsWith(Path path) {
-        throw new UnsupportedOperationException();
+        if (path instanceof SftpPath) {
+
+        }
+
+        throw foreignPath(path);
     }
 
     @Override public boolean endsWith(Path path) {
-        throw new UnsupportedOperationException();
+        if (path instanceof SftpPath) {
+
+        }
+
+        throw foreignPath(path);
     }
 
     @Override public Path normalize() {
@@ -104,12 +117,15 @@ public class SftpPath implements Path, SftpConstants {
                 .toArray(String[]::new));
         }
 
-        throw new ProviderMismatchException(
-            String.format("Path of type %s is not belonging to used provider", path.getClass().getCanonicalName()));
+        throw foreignPath(path);
     }
 
     @Override public Path relativize(Path path) {
-        throw new UnsupportedOperationException();
+        if (path instanceof SftpPath) {
+
+        }
+
+        throw foreignPath(path);
     }
 
     @Override public URI toUri() {
@@ -134,8 +150,7 @@ public class SftpPath implements Path, SftpConstants {
             return Arrays.compare(pathElements, sftpPath.pathElements);
         }
 
-        throw new ProviderMismatchException(
-            String.format("Path of type %s is not belonging to used provider", path.getClass().getCanonicalName()));
+        throw foreignPath(path);
     }
 
     String toString(String prefix) {
