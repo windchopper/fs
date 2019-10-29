@@ -103,7 +103,7 @@ public class SftpFileSystem extends FileSystem implements SftpConstants {
     @Override public Iterable<Path> getRootDirectories() {
         return rootEntries.stream()
             .filter(entry -> entry.getAttrs().isDir() && !StringUtils.equalsAny(entry.getFilename(), ".", ".."))
-            .map(entry -> new SftpPath(this, entry.getFilename()))
+            .map(entry -> new SftpPath(this, SEPARATOR + entry.getFilename()))
             .collect(toList());
     }
 

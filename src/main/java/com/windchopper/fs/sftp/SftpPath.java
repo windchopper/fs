@@ -1,5 +1,8 @@
 package com.windchopper.fs.sftp;
 
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
@@ -15,9 +18,14 @@ import static java.util.stream.Collectors.joining;
 public class SftpPath implements Path, SftpConstants {
 
     private final SftpFileSystem fileSystem;
-
-    private final String[] pathElements;
     private final boolean absolute;
+    private final String[] pathElements;
+
+    SftpPath(SftpFileSystem fileSystem, boolean absolute, String... pathElements) {
+        this.fileSystem = fileSystem;
+        this.absolute = absolute;
+        this.pathElements = pathElements;
+    }
 
     SftpPath(SftpFileSystem fileSystem, String... pathElements) {
         this.fileSystem = fileSystem;
@@ -25,6 +33,7 @@ public class SftpPath implements Path, SftpConstants {
         absolute = joinedElements.startsWith(SEPARATOR);
         this.pathElements = stream(joinedElements.split(SEPARATOR))
             .filter(not(SEPARATOR::equals))
+            .filter(not(""::equals))
             .toArray(String[]::new);
     }
 
@@ -46,7 +55,7 @@ public class SftpPath implements Path, SftpConstants {
 
     @Override public Path getParent() {
         if (pathElements.length > 1) {
-            return new SftpPath(fileSystem, Arrays.copyOfRange(pathElements, 0, pathElements.length));
+            return new SftpPath(fileSystem, absolute, Arrays.copyOfRange(pathElements, 0, pathElements.length - 1));
         }
 
         if (pathElements.length > 0 && absolute) {
@@ -90,18 +99,42 @@ public class SftpPath implements Path, SftpConstants {
 
     @Override public boolean startsWith(Path path) {
         if (path instanceof SftpPath) {
-
+            return startsWith((SftpPath) path);
         }
 
         throw foreignPath(path);
     }
 
+    public boolean startsWith(SftpPath path) {
+        int j = 0, jcount = path.pathElements.length;
+
+        for (int i = 0, icount = pathElements.length; i < icount && j < jcount; i++, j++) {
+            if (ObjectUtils.notEqual(pathElements[i], path.pathElements[j])) {
+                return false;
+            }
+        }
+
+        return j == jcount;
+    }
+
     @Override public boolean endsWith(Path path) {
         if (path instanceof SftpPath) {
-
+            return endsWith((SftpPath) path);
         }
 
         throw foreignPath(path);
+    }
+
+    public boolean endsWith(SftpPath path) {
+        int j = path.pathElements.length;
+
+        for (int i = pathElements.length; --i >= 0 && --j >= 0; ) {
+            if (ObjectUtils.notEqual(pathElements[i], path.pathElements[j])) {
+                return false;
+            }
+        }
+
+        return j == -1;
     }
 
     @Override public Path normalize() {
@@ -110,22 +143,29 @@ public class SftpPath implements Path, SftpConstants {
 
     @Override public Path resolve(Path path) {
         if (path instanceof SftpPath) {
-            SftpPath sftpPath = (SftpPath) path;
-            return new SftpPath(fileSystem, Stream.of(pathElements, sftpPath.pathElements)
-                .map(Arrays::stream)
-                .flatMap(identity())
-                .toArray(String[]::new));
+            return resolve((SftpPath) path);
         }
 
         throw foreignPath(path);
     }
 
+    public Path resolve(SftpPath path) {
+        return new SftpPath(fileSystem, Stream.of(pathElements, path.pathElements)
+            .map(Arrays::stream)
+            .flatMap(identity())
+            .toArray(String[]::new));
+    }
+
     @Override public Path relativize(Path path) {
         if (path instanceof SftpPath) {
-
+            return relativize((SftpPath) path);
         }
 
         throw foreignPath(path);
+    }
+
+    public Path relativize(SftpPath path) {
+        throw new UnsupportedOperationException();
     }
 
     @Override public URI toUri() {
@@ -146,8 +186,8 @@ public class SftpPath implements Path, SftpConstants {
 
     @Override public int compareTo(Path path) {
         if (Objects.requireNonNull(path, "path") instanceof SftpPath) {
-            SftpPath sftpPath = (SftpPath) path;
-            return Arrays.compare(pathElements, sftpPath.pathElements);
+            SftpPath anotherPath = (SftpPath) path;
+            return Arrays.compare(pathElements, anotherPath.pathElements);
         }
 
         throw foreignPath(path);
