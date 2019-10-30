@@ -23,18 +23,7 @@ import java.util.logging.Logger;
 
 import static java.util.Collections.emptyMap;
 
-public class SftpFileSystemProvider extends FileSystemProvider {
-
-    public static final String HOST = SftpFileSystemProvider.class.getCanonicalName() + ".host";
-    public static final String PORT = SftpFileSystemProvider.class.getCanonicalName() + ".port";
-    public static final String USERNAME = SftpFileSystemProvider.class.getCanonicalName() + ".username";
-    public static final String PASSWORD = SftpFileSystemProvider.class.getCanonicalName() + ".password";
-
-    public static final String THREAD_FACTORY = SftpFileSystemProvider.class.getCanonicalName() + ".threadFactory";
-    public static final String THREADING_DISABLED = SftpFileSystemProvider.class.getCanonicalName() + ".threadingDisabled";
-
-    public static final String SCHEME = "sftp";
-    public static final int STANDARD_PORT = 22;
+public class SftpFileSystemProvider extends FileSystemProvider implements SftpConstants {
 
     /*
      *
@@ -124,19 +113,19 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     @Override public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> viewType, LinkOption... linkOptions) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> attributesType, LinkOption... linkOptions) throws IOException {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override public Map<String, Object> readAttributes(Path path, String s, LinkOption... linkOptions) throws IOException {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override public void setAttribute(Path path, String s, Object o, LinkOption... linkOptions) throws IOException {
-
+        throw new UnsupportedOperationException();
     }
 
 }

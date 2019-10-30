@@ -123,7 +123,7 @@ public class SftpFileSystem extends FileSystem implements SftpConstants {
     }
 
     @Override public PathMatcher getPathMatcher(String pathString) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override public UserPrincipalLookupService getUserPrincipalLookupService() {
