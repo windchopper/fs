@@ -1,4 +1,4 @@
-package com.windchopper.fs;
+package com.windchopper.fs.sftp;
 
 import org.apache.commons.lang3.StringUtils;
 

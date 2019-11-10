@@ -1,4 +1,4 @@
-package com.windchopper.fs;
+package com.windchopper.fs.sftp;
 
 public interface SftpConstants {
 

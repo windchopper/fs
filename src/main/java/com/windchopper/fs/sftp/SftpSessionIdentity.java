@@ -1,4 +1,4 @@
-package com.windchopper.fs;
+package com.windchopper.fs.sftp;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;

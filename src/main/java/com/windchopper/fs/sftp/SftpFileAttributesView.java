@@ -1,6 +1,5 @@
-package com.windchopper.fs;
+package com.windchopper.fs.sftp;
 
-import java.io.IOException;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
