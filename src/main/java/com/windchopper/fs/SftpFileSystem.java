@@ -127,6 +127,8 @@ public class SftpFileSystem extends FileSystem implements SftpConstants {
     @Override public void close() {
         session.disconnect();
         provider.retire(configuration.sessionIdentity, this);
+        List.of(viewBuffer, listBuffer)
+            .forEach(Map::clear);
     }
 
     DirectoryStream<Path> newDirectoryStream(SftpPath path, DirectoryStream.Filter<? super Path> filter) throws IOException {
