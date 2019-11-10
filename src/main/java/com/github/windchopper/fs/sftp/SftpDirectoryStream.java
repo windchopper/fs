@@ -1,4 +1,4 @@
-package com.windchopper.fs.sftp;
+package com.github.windchopper.fs.sftp;
 
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;

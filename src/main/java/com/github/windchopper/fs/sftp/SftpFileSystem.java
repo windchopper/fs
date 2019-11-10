@@ -1,4 +1,4 @@
-package com.windchopper.fs.sftp;
+package com.github.windchopper.fs.sftp;
 
 import com.github.windchopper.common.util.Pipeliner;
 import com.jcraft.jsch.ChannelSftp;

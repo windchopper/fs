@@ -1,4 +1,4 @@
-package com.windchopper.fs;
+package com.github.windchopper.fs;
 
 import java.io.IOException;
 import java.net.URI;

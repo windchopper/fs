@@ -1,4 +1,4 @@
-package com.windchopper.fs.sftp;
+package com.github.windchopper.fs.sftp;
 
 import com.github.windchopper.common.util.stream.FailableConsumer;
 import com.github.windchopper.common.util.stream.FailableFunction;

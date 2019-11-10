@@ -1,15 +1,15 @@
 module windchopper.fs {
 
-    exports com.windchopper.fs;
-    exports com.windchopper.fs.sftp;
+    exports com.github.windchopper.fs;
+    exports com.github.windchopper.fs.sftp;
 
-    opens com.windchopper.fs;
-    opens com.windchopper.fs.sftp;
+    opens com.github.windchopper.fs;
+    opens com.github.windchopper.fs.sftp;
 
     requires jsch;
     requires windchopper.common.util;
 
     provides java.nio.file.spi.FileSystemProvider
-        with com.windchopper.fs.sftp.SftpFileSystemProvider;
+        with com.github.windchopper.fs.sftp.SftpFileSystemProvider;
 
 }

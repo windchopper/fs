@@ -1,4 +1,4 @@
-package com.windchopper.fs;
+package com.github.windchopper.fs;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

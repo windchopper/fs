@@ -1,1 +1,1 @@
-com.windchopper.fs.sftp.SftpFileSystemProvider
+com.github.windchopper.fs.sftp.SftpFileSystemProvider

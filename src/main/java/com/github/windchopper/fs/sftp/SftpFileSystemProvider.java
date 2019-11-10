@@ -1,8 +1,8 @@
-package com.windchopper.fs.sftp;
+package com.github.windchopper.fs.sftp;
 
+import com.github.windchopper.fs.JSchLoggerBridge;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
-import com.windchopper.fs.JSchLoggerBridge;
 
 import java.io.IOException;
 import java.net.URI;
@@ -59,7 +59,7 @@ public class SftpFileSystemProvider extends FileSystemProvider implements SftpCo
     }
 
     @Override public String getScheme() {
-        return SftpConfiguration.SCHEME;
+        return SCHEME;
     }
 
     @Override public FileSystem newFileSystem(URI uri, Map<String, ?> environment) throws IOException {
