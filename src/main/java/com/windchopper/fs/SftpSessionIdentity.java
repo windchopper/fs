@@ -1,25 +1,44 @@
-package com.windchopper.fs.sftp;
+package com.windchopper.fs;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class SftpPeerIdentity {
+import java.net.URI;
+import java.net.URISyntaxException;
+
+public class SftpSessionIdentity {
 
     final String host;
     final int port;
     final String username;
 
-    public SftpPeerIdentity(String host, int port, String username) {
+    public SftpSessionIdentity(String host, int port, String username) {
         this.host = host;
         this.port = port;
         this.username = username;
     }
 
+    public URI composeUri(String path) {
+        try {
+            return new URI(SftpConfiguration.SCHEME, username, host, port, path, null, null);
+        } catch (URISyntaxException thrown) {
+            throw new IllegalArgumentException(
+                String.format("Invalid path: %s", path));
+        }
+    }
+
+    public Session createJschSession(JSch jsch) throws JSchException {
+        return jsch.getSession(username, host, port);
+    }
+
     @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
-    public SftpPeerIdentity clone() {
-        return new SftpPeerIdentity(host, port, username);
+    public SftpSessionIdentity clone() {
+        return new SftpSessionIdentity(host, port, username);
     }
 
     @Override public int hashCode() {
@@ -34,7 +53,7 @@ public class SftpPeerIdentity {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        SftpPeerIdentity that = (SftpPeerIdentity) object;
+        SftpSessionIdentity that = (SftpSessionIdentity) object;
 
         return new EqualsBuilder()
             .append(port, that.port)
