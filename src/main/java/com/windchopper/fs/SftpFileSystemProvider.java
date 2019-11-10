@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.emptyMap;
 
-public class SftpFileSystemProvider extends FileSystemProvider implements SftpConstants, SftpSharedRoutines {
+public class SftpFileSystemProvider extends FileSystemProvider implements SftpConstants, SftpRoutines {
 
     final Map<SftpSessionIdentity, SftpFileSystem> connectedFileSystems = new ConcurrentHashMap<>();
     final JSch jsch = new JSch();

@@ -13,7 +13,7 @@ import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.joining;
 
-public class SftpPath implements Path, SftpConstants, SftpSharedRoutines {
+public class SftpPath implements Path, SftpConstants, SftpRoutines {
 
     private final SftpFileSystem fileSystem;
     private final SftpSessionIdentity connectionIdentity;

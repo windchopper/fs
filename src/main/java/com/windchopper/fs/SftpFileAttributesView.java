@@ -19,12 +19,12 @@ public class SftpFileAttributesView implements BasicFileAttributeView {
     }
 
     @Override
-    public BasicFileAttributes readAttributes() throws IOException {
+    public BasicFileAttributes readAttributes() {
         return new SftpFileAttributes(file.attributes);
     }
 
     @Override
-    public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+    public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) {
         throw new UnsupportedOperationException();
     }
 

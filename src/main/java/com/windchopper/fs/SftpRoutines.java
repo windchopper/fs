@@ -10,7 +10,7 @@ import java.nio.file.ProviderMismatchException;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 
-public interface SftpSharedRoutines {
+public interface SftpRoutines {
 
     private ProviderMismatchException foreignPath(Path... paths) {
         return new ProviderMismatchException(stream(paths)
