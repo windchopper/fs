@@ -2,6 +2,7 @@ package com.windchopper.fs.sftp;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
+import com.windchopper.fs.JSchLoggerBridge;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,10 +23,14 @@ import static java.util.Collections.emptyMap;
 
 public class SftpFileSystemProvider extends FileSystemProvider implements SftpConstants, SftpRoutines {
 
+    final JSchLoggerBridge loggerBridge = new JSchLoggerBridge(logger);
+    final JSch secureChannel = new JSch();
+
     final Map<SftpSessionIdentity, SftpFileSystem> connectedFileSystems = new ConcurrentHashMap<>();
-    final JSch jsch = new JSch();
 
     public SftpFileSystemProvider() throws IOException {
+        JSch.setLogger(loggerBridge);
+
         Optional<Path> optionalConfigDir = Optional.ofNullable(System.getProperty("user.home"))
             .map(Paths::get)
             .map(path -> path.resolve(".ssh"));
@@ -38,14 +43,14 @@ public class SftpFileSystemProvider extends FileSystemProvider implements SftpCo
 
                 for (Path identityFile : identityFiles) {
                     if (Files.exists(identityFile)) {
-                        jsch.addIdentity(identityFile.toRealPath().toString());
+                        secureChannel.addIdentity(identityFile.toRealPath().toString());
                     }
                 }
 
                 Path knownHostsFile = configDir.resolve("known_hosts");
 
                 if (Files.exists(knownHostsFile)) {
-                    jsch.setKnownHosts(knownHostsFile.toRealPath().toString());
+                    secureChannel.setKnownHosts(knownHostsFile.toRealPath().toString());
                 }
             } catch (JSchException thrown) {
                 throw new IOException(thrown);

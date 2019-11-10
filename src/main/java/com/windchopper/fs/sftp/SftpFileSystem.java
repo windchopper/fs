@@ -38,7 +38,7 @@ public class SftpFileSystem extends FileSystem implements SftpConstants {
             viewBuffer = new LRUMap<>(configuration.bufferSize);
             listBuffer = new LRUMap<>(configuration.bufferSize);
 
-            session = Pipeliner.of(provider.jsch)
+            session = Pipeliner.of(provider.secureChannel)
                 .mapFailable(configuration.sessionIdentity::createJschSession)
                 .accept(session -> session.setConfig("StrictHostKeyChecking", "no"))
                 .set(session -> session::setPassword, configuration.password)

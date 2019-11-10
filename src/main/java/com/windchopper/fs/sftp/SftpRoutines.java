@@ -6,19 +6,14 @@ import org.apache.commons.lang3.Functions;
 
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
+import java.util.logging.Logger;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
 
 public interface SftpRoutines {
 
-    private ProviderMismatchException foreignPath(Path... paths) {
-        return new ProviderMismatchException(stream(paths)
-            .map(Object::getClass)
-            .filter(type -> type != SftpPath.class)
-            .map(Class::getCanonicalName)
-            .collect(joining(", ", "Path of type(s) ", " is not belonging to used provider")));
-    }
+    Logger logger = Logger.getLogger(SftpRoutines.class.getPackageName());
 
     default <E extends Throwable> void checkPathAndAccept(Path path, FailableConsumer<SftpPath, E> consumer) throws E {
         if (path instanceof SftpPath) {
@@ -42,6 +37,18 @@ public interface SftpRoutines {
         }
 
         throw foreignPath(path1st, path2nd);
+    }
+
+    /*
+     *
+     */
+
+    private ProviderMismatchException foreignPath(Path... paths) {
+        return new ProviderMismatchException(stream(paths)
+            .map(Object::getClass)
+            .filter(type -> type != SftpPath.class)
+            .map(Class::getCanonicalName)
+            .collect(joining(", ", "Path of type(s) ", " is not belonging to used provider")));
     }
 
 }
