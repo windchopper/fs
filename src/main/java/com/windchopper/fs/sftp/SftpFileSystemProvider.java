@@ -1,6 +1,7 @@
 package com.windchopper.fs.sftp;
 
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -11,7 +12,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,6 +24,34 @@ public class SftpFileSystemProvider extends FileSystemProvider implements SftpCo
 
     final Map<SftpSessionIdentity, SftpFileSystem> connectedFileSystems = new ConcurrentHashMap<>();
     final JSch jsch = new JSch();
+
+    public SftpFileSystemProvider() throws IOException {
+        Optional<Path> optionalConfigDir = Optional.ofNullable(System.getProperty("user.home"))
+            .map(Paths::get)
+            .map(path -> path.resolve(".ssh"));
+
+        if (optionalConfigDir.isPresent()) {
+            Path configDir = optionalConfigDir.get();
+
+            try {
+                List<Path> identityFiles = List.of(configDir.resolve("id_rsa"), configDir.resolve("id_dsa"), configDir.resolve("id_ecdsa"));
+
+                for (Path identityFile : identityFiles) {
+                    if (Files.exists(identityFile)) {
+                        jsch.addIdentity(identityFile.toRealPath().toString());
+                    }
+                }
+
+                Path knownHostsFile = configDir.resolve("known_hosts");
+
+                if (Files.exists(knownHostsFile)) {
+                    jsch.setKnownHosts(knownHostsFile.toRealPath().toString());
+                }
+            } catch (JSchException thrown) {
+                throw new IOException(thrown);
+            }
+        }
+    }
 
     @Override public String getScheme() {
         return SftpConfiguration.SCHEME;
