@@ -13,7 +13,7 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.*
 import java.util.stream.Collectors
 
-class SftpFileSystem(private val provider: SftpFileSystemProvider, private val configuration: SftpConfiguration): FileSystem() {
+class SftpFileSystem(private val provider: SftpFileSystemProvider, private val configuration: SftpConfiguration): FileSystem(), SftpRoutines {
 
     val viewBuffer: MutableMap<String?, SftpFile>
     val listBuffer: MutableMap<String?, List<SftpFile>>
@@ -172,7 +172,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun newWatchService(): WatchService {
-        throw UnsupportedOperationException("Couldn't watch remote file system")
+        throw watchNotSupported()
     }
 
 }

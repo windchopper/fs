@@ -45,22 +45,28 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
         return SftpConstants.SCHEME
     }
 
-    override fun newFileSystem(uri: URI, environment: Map<String?, *>?): FileSystem {
-        val configuration = SftpConfiguration(uri, environment!!)
-        if (connectedFileSystems.containsKey(configuration.sessionIdentity)) {
-            throw FileSystemAlreadyExistsException(String.format("File system already connected to %s", configuration.sessionIdentity))
+    override fun newFileSystem(uri: URI, environment: Map<String, *>): FileSystem {
+        with (SftpConfiguration(uri, environment)) {
+            if (connectedFileSystems.containsKey(sessionIdentity)) {
+                throw FileSystemAlreadyExistsException("File system already connected to ${sessionIdentity}")
+            }
+
+            return SftpFileSystem(this@SftpFileSystemProvider, this)
+                .let {
+                    connectedFileSystems[sessionIdentity] = it
+                    it
+                }
         }
-        val fileSystem = SftpFileSystem(this, configuration)
-        connectedFileSystems[configuration.sessionIdentity] = fileSystem
-        return fileSystem
     }
 
     override fun getFileSystem(uri: URI): FileSystem {
-        val configuration = SftpConfiguration(uri, emptyMap<String?, Any>())
-        if (connectedFileSystems.containsKey(configuration.sessionIdentity)) {
-            return connectedFileSystems[configuration.sessionIdentity]!!
+        with (SftpConfiguration(uri)) {
+            if (connectedFileSystems.containsKey(sessionIdentity)) {
+                return connectedFileSystems[sessionIdentity]!!
+            }
+
+            throw FileSystemNotFoundException("File system not connected to ${sessionIdentity}")
         }
-        throw FileSystemNotFoundException(String.format("File system not connected to %s", configuration.sessionIdentity))
     }
 
     fun retire(connectionIdentity: SftpConfiguration.SessionIdentity, fileSystem: SftpFileSystem?) {
@@ -99,7 +105,7 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
         checkPathAndAccept(targetPath) { TODO("not implemented") }
     }
 
-    @Throws(IOException::class) override fun isSameFile(path1st: Path, path2nd: Path): Boolean {
+    @Throws(IOException::class) @Suppress("NAME_SHADOWING") override fun isSameFile(path1st: Path, path2nd: Path): Boolean {
         return checkPathAndApply(path1st, path2nd) { path1st, path2nd -> TODO("not implemented") }
     }
 
@@ -119,12 +125,13 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
         return checkPathAndApply(path) { TODO("not implemented") }
     }
 
-    @Throws(IOException::class) override fun <A: BasicFileAttributes?> readAttributes(path: Path, attributesType: Class<A>, vararg linkOptions: LinkOption): A {
-        return checkPathAndApply(path) { domesticPath: SftpPath ->
-            if (attributesType == BasicFileAttributes::class.java || attributesType == SftpFileAttributes::class.java) {
-                return@checkPathAndApply domesticPath.fileSystem.view(path.toString()).toFileAttributes() as A
+    @Throws(IOException::class) @Suppress("UNCHECKED_CAST") override fun <A: BasicFileAttributes> readAttributes(path: Path, attributesType: Class<A>, vararg linkOptions: LinkOption): A {
+        return checkPathAndApply(path) {
+            return@checkPathAndApply if (attributesType === BasicFileAttributes::javaClass || attributesType === SftpFileAttributes::javaClass) {
+                it.fileSystem.view(path.toString()).toFileAttributes() as A
+            } else {
+                throw attributesNotSupported(attributesType)
             }
-            throw UnsupportedOperationException(String.format("Attributes of type %s not supported", attributesType.canonicalName))
         }
     }
 

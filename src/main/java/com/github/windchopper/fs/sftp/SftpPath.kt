@@ -26,18 +26,17 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
     }
 
     override fun getRoot(): Path? {
-        return if (absolute && pathElements.size > 0) SftpPath(fileSystem, sessionIdentity, SftpConstants.SEPARATOR) else null
+        return if (absolute && pathElements.isNotEmpty()) SftpPath(fileSystem, sessionIdentity, SftpConstants.SEPARATOR) else null
     }
 
     override fun getFileName(): Path? {
-        return if (pathElements.size > 0) SftpPath(fileSystem, sessionIdentity, pathElements[pathElements.size - 1]) else null
+        return if (pathElements.isNotEmpty()) SftpPath(fileSystem, sessionIdentity, pathElements[pathElements.size - 1]) else null
     }
 
     override fun getParent(): Path? {
-        if (pathElements.size > 1) {
-            return SftpPath(fileSystem, sessionIdentity, absolute, *Arrays.copyOfRange(pathElements, 0, pathElements.size - 1))
-        }
-        return if (pathElements.size > 0 && absolute) {
+        return if (pathElements.size > 1) {
+            SftpPath(fileSystem, sessionIdentity, absolute, *pathElements.copyOfRange(0, pathElements.size - 1))
+        } else if (pathElements.isNotEmpty() && absolute) {
             SftpPath(fileSystem, sessionIdentity, SftpConstants.SEPARATOR)
         } else null
     }
@@ -47,20 +46,23 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
     }
 
     override fun getName(index: Int): Path {
-        if (index < pathElements.size) {
-            return SftpPath(fileSystem, sessionIdentity, pathElements[index])
+        return if (index < pathElements.size) {
+            SftpPath(fileSystem, sessionIdentity, pathElements[index])
+        } else {
+            throw IllegalArgumentException("Index ${index} out of bounds (${pathElements.size})")
         }
-        throw IllegalArgumentException(String.format("Index %d out of bounds (%d)", index, pathElements.size))
     }
 
     override fun subpath(fromIndex: Int, toIndex: Int): Path {
-        if (fromIndex >= 0) {
+        return if (fromIndex >= 0) {
             if (toIndex <= pathElements.size) {
-                return SftpPath(fileSystem, sessionIdentity, *Arrays.copyOfRange(pathElements, fromIndex, toIndex))
+                SftpPath(fileSystem, sessionIdentity, *Arrays.copyOfRange(pathElements, fromIndex, toIndex))
+            } else {
+                throw IllegalArgumentException("End index ${toIndex} out of bounds (${pathElements.size})")
             }
-            throw IllegalArgumentException(String.format("End index %d out of bounds (%d)", toIndex, pathElements.size))
+        } else {
+            throw IllegalArgumentException("Begin index ${fromIndex} out of bounds")
         }
-        throw IllegalArgumentException(String.format("Begin index %d out of bounds", fromIndex))
     }
 
     override fun startsWith(path: Path): Boolean {
@@ -107,7 +109,7 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
     }
 
     override fun relativize(path: Path): Path {
-        return checkPathAndApply<Path>(path) { domesticPath: SftpPath? -> throw UnsupportedOperationException() }
+        return checkPathAndApply<Path>(path) { TODO("not implemented") }
     }
 
     override fun toUri(): URI {
@@ -118,18 +120,16 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
         return if (absolute) this else SftpPath(fileSystem, sessionIdentity, toString(SftpConstants.SEPARATOR))
     }
 
-    @Throws(IOException::class)
-    override fun toRealPath(vararg linkOptions: LinkOption): Path {
+    @Throws(IOException::class) override fun toRealPath(vararg linkOptions: LinkOption): Path {
         return SftpPath(fileSystem, sessionIdentity, fileSystem.realPath(toString()))
     }
 
-    @Throws(IOException::class)
-    override fun register(watchService: WatchService, kinds: Array<WatchEvent.Kind<*>?>?, vararg modifiers: WatchEvent.Modifier): WatchKey {
-        throw UnsupportedOperationException()
+    @Throws(IOException::class) override fun register(watchService: WatchService, kinds: Array<WatchEvent.Kind<*>?>?, vararg modifiers: WatchEvent.Modifier): WatchKey {
+        throw watchNotSupported()
     }
 
-    override fun compareTo(path: Path): Int {
-        return checkPathAndApply(path) { domesticPath: SftpPath -> Arrays.compare(pathElements, domesticPath.pathElements) }
+    override fun compareTo(other: Path): Int {
+        return checkPathAndApply(other) { domesticPath: SftpPath -> Arrays.compare(pathElements, domesticPath.pathElements) }
     }
 
     fun toString(prefix: String): String {

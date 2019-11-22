@@ -28,4 +28,12 @@ interface SftpRoutines {
             .joinToString(", ", "Path of type(s) ", " is not belonging to used provider"))
     }
 
+    fun watchNotSupported(): UnsupportedOperationException {
+        throw UnsupportedOperationException("Couldn't watch remote file system")
+    }
+
+    fun attributesNotSupported(type: Class<*>): UnsupportedOperationException {
+        throw UnsupportedOperationException("Attributes of type ${type.canonicalName} not supported")
+    }
+
 }

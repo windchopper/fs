@@ -6,7 +6,7 @@ import java.util.logging.Logger
 import kotlin.reflect.KClass
 import kotlin.reflect.full.cast
 
-class SftpConfiguration(uri: URI, environment: Map<String?, *>) {
+class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String, Any>()) {
 
     data class SessionIdentity(val host: String, val port: Int, val username: String?)
 
@@ -18,13 +18,13 @@ class SftpConfiguration(uri: URI, environment: Map<String?, *>) {
         val host = valueFromEnvironment(environment, SftpConstants.HOST, String::class)?:uri.host.trimToNull()?:SftpConstants.DEFAULT_HOST
         val port = valueFromEnvironment(environment, SftpConstants.PORT, Int::class, Integer::parseUnsignedInt)?:uri.port.positiveOrNull()?:SftpConstants.DEFAULT_PORT
         val userInfoParts = uri.userInfo?.trimToNull()?.split(":")
-        val username = environment[SftpConstants.USERNAME] as String?:userInfoParts?.getOrNull(0)
-        password = environment[SftpConstants.PASSWORD] as String?:userInfoParts?.getOrNull(1)
+        val username = environment[SftpConstants.USERNAME]?.toString()?:userInfoParts?.getOrNull(0)
+        password = environment[SftpConstants.PASSWORD]?.toString()?:userInfoParts?.getOrNull(1)
         sessionIdentity = SessionIdentity(host, port, username)
         bufferSize = valueFromEnvironment(environment, SftpConstants.BUFFER_SIZE, Int::class, Integer::parseUnsignedInt)?:SftpConstants.DEFAULT_BUFFER_SIZE
     }
 
-    fun <T: Any> valueFromEnvironment(environment: Map<String?, *>, key: String?, type: KClass<T>, converter: ((String) -> T)? = null): T? {
+    fun <T: Any> valueFromEnvironment(environment: Map<String, *>, key: String?, type: KClass<T>, converter: ((String) -> T)? = null): T? {
         var value: T? = null
         val rawValue = environment[key]
 
