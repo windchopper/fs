@@ -7,10 +7,12 @@ module windchopper.fs {
     opens com.github.windchopper.fs.sftp;
 
     requires java.logging;
+    requires kotlin.stdlib.jdk8;
+    requires kotlin.stdlib;
+    requires kotlin.reflect;
     requires jsch;
     requires org.apache.commons.lang3;
     requires org.apache.commons.collections4;
-    requires windchopper.common.util;
 
     provides java.nio.file.spi.FileSystemProvider
         with com.github.windchopper.fs.sftp.SftpFileSystemProvider;
