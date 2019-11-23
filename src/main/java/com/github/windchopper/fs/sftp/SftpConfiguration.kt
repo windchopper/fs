@@ -16,7 +16,7 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
 
     init {
         val host = valueFromEnvironment(environment, SftpConstants.HOST, String::class)?:uri.host.trimToNull()?:SftpConstants.DEFAULT_HOST
-        val port = valueFromEnvironment(environment, SftpConstants.PORT, Int::class, Integer::parseUnsignedInt)?:uri.port.positiveOrNull()?:SftpConstants.DEFAULT_PORT
+        val port = valueFromEnvironment(environment, SftpConstants.PORT, Int::class, Integer::parseUnsignedInt)?:uri.port.nullWhenNotPositive()?:SftpConstants.DEFAULT_PORT
         val userInfoParts = uri.userInfo?.trimToNull()?.split(":")
         val username = environment[SftpConstants.USERNAME]?.toString()?:userInfoParts?.getOrNull(0)
         password = environment[SftpConstants.PASSWORD]?.toString()?:userInfoParts?.getOrNull(1)
