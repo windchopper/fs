@@ -1,102 +1,75 @@
 package com.github.windchopper.fs.sftp
 
-import com.jcraft.jsch.ChannelSftp
 import com.jcraft.jsch.ChannelSftp.LsEntry
-import com.jcraft.jsch.JSchException
 import com.jcraft.jsch.Session
-import com.jcraft.jsch.SftpException
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.*
-import java.util.stream.Collectors
 
 class SftpFileSystem(private val provider: SftpFileSystemProvider, private val configuration: SftpConfiguration): FileSystem(), SftpRoutines {
 
-    val viewBuffer: MutableMap<String?, SftpFile>
-    val listBuffer: MutableMap<String?, List<SftpFile>>
-    val session: Session
-
-    init {
-        try {
-            viewBuffer = LRUMap(configuration.bufferSize)
-            listBuffer = LRUMap(configuration.bufferSize)
-            with (configuration) {
-                with (sessionIdentity) {
-                    session = provider.secureChannel.getSession(username, host, port)
-                        .let {
-                            it.setConfig("StrictHostKeyChecking", "no")
-                            it.setPassword(password)
-                            it.connect()
-                            it
-                        }
-                }
+    val viewBuffer: MutableMap<String?, SftpFile> = LRUMap(configuration.bufferSize)
+    val listBuffer: MutableMap<String?, List<SftpFile>> = LRUMap(configuration.bufferSize)
+    val session: Session = wrapNotIOException {
+        with (configuration) {
+            with (sessionIdentity) {
+                provider.secureChannel.getSession(username, host, port)
+                    .let {
+                        it.setConfig("StrictHostKeyChecking", "no")
+                        it.setPassword(password)
+                        it.connect()
+                        it
+                    }
             }
-        } catch (thrown: JSchException) {
-            throw IOException(thrown)
         }
     }
 
-    fun view(path: String?): SftpFile {
+    fun view(path: String): SftpFile {
         return viewBuffer[path]
-            ?:try {
-                val channel = session.openChannel("sftp") as ChannelSftp
-                channel.connect()
-                try {
-                    fillInBuffers(path, channel.ls(path))
-                    viewBuffer[path]
-                } finally {
-                    channel.disconnect()
-                }
-            } catch (thrown: Exception) {
-                when (thrown) {
-                    is IOException -> throw thrown
-                    else -> throw IOException(thrown)
-                }
+            ?:doWithChannel(session) {
+                fillInBuffers(path, it.ls(path))
+                viewBuffer[path]
             }
             ?:throw FileNotFoundException(path)
     }
 
-    fun fillInBuffers(path: String?, entries: Vector<*>): List<SftpFile> {
+    @Suppress("UNCHECKED_CAST") fun fillInBuffers(path: String, entries: Vector<*>): List<SftpFile> {
         val files: MutableList<SftpFile> = ArrayList(entries.size)
-        for (entry in entries) {
-            val typedEntry = entry as LsEntry
-            var file: SftpFile
-            if (typedEntry.filename == "..") {
-                continue
+
+        (entries as Vector<LsEntry>)
+            .filter {
+                it.filename != ".."
             }
-            if (typedEntry.filename == ".") {
-                file = SftpFile(path!!.substringBeforeLast(SftpConstants.SEPARATOR), path!!.substringAfterLast(SftpConstants.SEPARATOR), typedEntry.attrs)
-            } else {
-                files.add(SftpFile(path!!, typedEntry.filename, typedEntry.attrs).also { file = it })
+            .map {
+                if (it.filename == ".") {
+                    SftpFile(path.substringBeforeLast(SftpConstants.SEPARATOR), path.substringAfterLast(SftpConstants.SEPARATOR), it.attrs)
+                } else {
+                    SftpFile(path, it.filename, it.attrs)
+                        .let {
+                            files.add(it)
+                            it
+                        }
+                }
             }
-            viewBuffer[file.toAbsolutePath()] = file
-        }
+            .forEach {
+                viewBuffer[it.toAbsolutePath()] = it
+            }
+
         listBuffer[path] = files
         return files
     }
 
-    @Throws(IOException::class) fun list(path: String): List<SftpFile>? {
-        var path = path
-        var files = listBuffer[if (path == SftpConstants.SEPARATOR) path else path.removeSuffix(SftpConstants.SEPARATOR).also { path = it }]
-        if (files == null) {
-            files = try {
-                val channel = session.openChannel("sftp") as ChannelSftp
-                channel.connect()
-                try {
-                    fillInBuffers(path, channel.ls(path))
-                } finally {
-                    channel.disconnect()
-                }
-            } catch (thrown: JSchException) {
-                throw IOException(thrown)
-            } catch (thrown: SftpException) {
-                throw IOException(thrown)
+    @Throws(IOException::class) fun list(path: String): List<SftpFile> {
+        return (if (path == SftpConstants.SEPARATOR) path else path.removeSuffix(SftpConstants.SEPARATOR))
+            .let {
+                listBuffer[it]
+                    ?:doWithChannel(session) {
+                        fillInBuffers(path, it.ls(path))
+                    }
             }
-        }
-        return files
     }
 
     override fun provider(): SftpFileSystemProvider {
@@ -111,10 +84,10 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
         }
     }
 
-    fun newDirectoryStream(path: SftpPath, filter: DirectoryStream.Filter<in Path?>?): DirectoryStream<Path> {
-        return SftpDirectoryStream(list(path.toString())!!.stream()
-            .map { file: SftpFile -> file.toPath(this, configuration.sessionIdentity) }
-            .collect(Collectors.toList()))
+    fun newDirectoryStream(path: SftpPath, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {
+        return SftpDirectoryStream(list(path.toString())
+            .map { it.toPath(this, configuration.sessionIdentity) }
+            .toMutableList())
     }
 
     override fun isOpen(): Boolean {
@@ -130,20 +103,8 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) fun realPath(path: String?): String {
-        return try {
-            val channelSftp = session.openChannel("sftp") as ChannelSftp
-            channelSftp.connect()
-            try {
-                channelSftp.realpath(path)
-            } finally {
-                channelSftp.disconnect()
-            }
-        } catch (thrown: JSchException) {
-            throw IOException(String.format("Couldn't resolve path %s", path),
-                thrown)
-        } catch (thrown: SftpException) {
-            throw IOException(String.format("Couldn't resolve path %s", path),
-                thrown)
+        return doWithChannel(session) {
+            it.realpath(path)
         }
     }
 

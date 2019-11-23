@@ -2,7 +2,6 @@ package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.JSchLoggerBridge
 import com.jcraft.jsch.JSch
-import com.jcraft.jsch.JSchException
 import java.io.IOException
 import java.net.URI
 import java.nio.channels.SeekableByteChannel
@@ -25,7 +24,7 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
         System.getProperty("user.home")
             ?.let { Paths.get(it).resolve(".ssh") }
             ?.let {
-                try {
+                wrapNotIOException {
                     listOf(it.resolve("id_rsa"), it.resolve("id_dsa"), it.resolve("id_ecdsa"))
                         .filter { Files.exists(it) }
                         .forEach { secureChannel.addIdentity(it.toRealPath().toString()) }
@@ -35,8 +34,6 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
                     if (Files.exists(knownHostsFile)) {
                         secureChannel.setKnownHosts(knownHostsFile.toRealPath().toString())
                     }
-                } catch (thrown: JSchException) {
-                    throw IOException(thrown)
                 }
             }
     }

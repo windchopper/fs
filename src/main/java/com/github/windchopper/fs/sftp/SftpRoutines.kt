@@ -1,5 +1,8 @@
 package com.github.windchopper.fs.sftp
 
+import com.jcraft.jsch.ChannelSftp
+import com.jcraft.jsch.Session
+import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.ProviderMismatchException
 
@@ -34,6 +37,31 @@ interface SftpRoutines {
 
     fun attributesNotSupported(type: Class<*>): UnsupportedOperationException {
         throw UnsupportedOperationException("Attributes of type ${type.canonicalName} not supported")
+    }
+
+    @Throws(IOException::class) fun <T> wrapNotIOException(expression: () -> T): T {
+        return try {
+            expression.invoke()
+        } catch (thrown: Exception) {
+            when (thrown) {
+                is IOException -> throw thrown
+                else -> throw IOException(thrown)
+            }
+        }
+    }
+
+    @Throws(IOException::class) fun <T> doWithChannel(session: Session, action: (ChannelSftp) -> T): T {
+        return wrapNotIOException {
+            val channel = session.openChannel("sftp") as ChannelSftp
+
+            channel.connect()
+
+            try {
+                action(channel)
+            } finally {
+                channel.disconnect()
+            }
+        }
     }
 
 }

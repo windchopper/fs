@@ -5,7 +5,7 @@ import java.net.URI
 import java.nio.file.*
 import java.util.*
 
-class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfiguration.SessionIdentity, val absolute: Boolean, vararg pathElements: String): Path, SftpRoutines {
+class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdentity: SftpConfiguration.SessionIdentity, private val absolute: Boolean, vararg pathElements: String): Path, SftpRoutines {
 
     private val pathElements: Array<String> = arrayOf(*pathElements)
 
@@ -17,7 +17,7 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
             .filter { it.isNotBlank() }
             .toTypedArray())
 
-    override fun getFileSystem(): FileSystem {
+    override fun getFileSystem(): SftpFileSystem {
         return fileSystem
     }
 
@@ -101,10 +101,7 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
 
     override fun resolve(path: Path): Path {
         return checkPathAndApply(path) {
-            SftpPath(
-                fileSystem,
-                sessionIdentity,
-                *pathElements.plus(it.pathElements))
+            SftpPath(fileSystem, sessionIdentity, *pathElements.plus(it.pathElements))
         }
     }
 
@@ -129,7 +126,7 @@ class SftpPath(val fileSystem: SftpFileSystem, val sessionIdentity: SftpConfigur
     }
 
     override fun compareTo(other: Path): Int {
-        return checkPathAndApply(other) { domesticPath: SftpPath -> Arrays.compare(pathElements, domesticPath.pathElements) }
+        return checkPathAndApply(other) { Arrays.compare(pathElements, it.pathElements) }
     }
 
     fun toString(prefix: String): String {
