@@ -10,6 +10,7 @@ module windchopper.fs {
     requires kotlin.stdlib.jdk8;
     requires kotlin.stdlib;
     requires kotlin.reflect;
+    requires kotlinx.coroutines.core;
     requires jsch;
     requires org.apache.commons.lang3;
     requires org.apache.commons.collections4;

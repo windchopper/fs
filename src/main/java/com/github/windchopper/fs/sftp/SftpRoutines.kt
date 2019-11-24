@@ -1,7 +1,7 @@
 package com.github.windchopper.fs.sftp
 
-import com.jcraft.jsch.ChannelSftp
-import com.jcraft.jsch.Session
+import com.github.windchopper.fs.JSchHelper
+import com.jcraft.jsch.Channel
 import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.ProviderMismatchException
@@ -50,16 +50,14 @@ interface SftpRoutines {
         }
     }
 
-    @Throws(IOException::class) fun <T> doWithChannel(session: Session, action: (ChannelSftp) -> T): T {
+    @Throws(IOException::class) fun <T, C: Channel> doWithChannel(helper: JSchHelper<C>, action: (C) -> T): T {
         return wrapNotIOException {
-            val channel = session.openChannel("sftp") as ChannelSftp
-
-            channel.connect()
+            val channel = helper.connect()
 
             try {
                 action(channel)
             } finally {
-                channel.disconnect()
+                helper.disconnect()
             }
         }
     }

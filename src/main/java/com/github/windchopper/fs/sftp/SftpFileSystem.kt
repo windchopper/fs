@@ -1,7 +1,7 @@
 package com.github.windchopper.fs.sftp
 
+import com.github.windchopper.fs.JSchHelper
 import com.jcraft.jsch.ChannelSftp.LsEntry
-import com.jcraft.jsch.Session
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -13,23 +13,23 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     val viewBuffer: MutableMap<String?, SftpFile> = LRUMap(configuration.bufferSize)
     val listBuffer: MutableMap<String?, List<SftpFile>> = LRUMap(configuration.bufferSize)
-    val session: Session = wrapNotIOException {
-        with (configuration) {
-            with (sessionIdentity) {
-                provider.secureChannel.getSession(username, host, port)
-                    .let {
-                        it.setConfig("StrictHostKeyChecking", "no")
-                        it.setPassword(password)
-                        it.connect()
-                        it
-                    }
+    val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, wrapNotIOException {
+            with (configuration) {
+                with (sessionIdentity) {
+                    provider.secureChannel.getSession(username, host, port)
+                        .let {
+                            it.setConfig("StrictHostKeyChecking", "no")
+                            it.setPassword(password)
+                            it.connect()
+                            it
+                        }
+                }
             }
-        }
-    }
+        })
 
     fun view(path: String): SftpFile {
         return viewBuffer[path]
-            ?:doWithChannel(session) {
+            ?:doWithChannel(helper) {
                 fillInBuffers(path, it.ls(path))
                 viewBuffer[path]
             }
@@ -66,7 +66,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
         return (if (path == SftpConstants.SEPARATOR) path else path.removeSuffix(SftpConstants.SEPARATOR))
             .let {
                 listBuffer[it]
-                    ?:doWithChannel(session) {
+                    ?:doWithChannel(helper) {
                         fillInBuffers(path, it.ls(path))
                     }
             }
@@ -77,7 +77,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) override fun close() {
-        session.disconnect()
+        helper.session.disconnect()
         provider.retire(configuration.sessionIdentity, this)
         for (buffer in listOf(viewBuffer, listBuffer)) {
             buffer.clear()
@@ -91,7 +91,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun isOpen(): Boolean {
-        return session.isConnected
+        return helper.session.isConnected
     }
 
     override fun isReadOnly(): Boolean {
@@ -103,13 +103,13 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) fun realPath(path: String?): String {
-        return doWithChannel(session) {
+        return doWithChannel(helper) {
             it.realpath(path)
         }
     }
 
     override fun getRootDirectories(): Iterable<Path> {
-        return SftpPath(this, configuration.sessionIdentity, SftpConstants.SEPARATOR).toList()
+        return listOf(SftpPath(this, configuration.sessionIdentity, SftpConstants.SEPARATOR))
     }
 
     override fun getFileStores(): Iterable<FileStore> {

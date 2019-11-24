@@ -3,7 +3,7 @@ package com.github.windchopper.fs
 import java.util.logging.Level
 import java.util.logging.Logger
 
-class JSchLoggerBridge(private val logger: Logger): com.jcraft.jsch.Logger {
+class JSchLogger(private val logger: Logger): com.jcraft.jsch.Logger {
 
     override fun isEnabled(level: Int): Boolean {
         return logger.isLoggable(translateLevel(level))

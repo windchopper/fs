@@ -1,6 +1,6 @@
 package com.github.windchopper.fs.sftp
 
-import com.github.windchopper.fs.JSchLoggerBridge
+import com.github.windchopper.fs.JSchLogger
 import com.jcraft.jsch.JSch
 import java.io.IOException
 import java.net.URI
@@ -19,7 +19,7 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
     val connectedFileSystems: MutableMap<SftpConfiguration.SessionIdentity, SftpFileSystem> = ConcurrentHashMap()
 
     init {
-        JSch.setLogger(JSchLoggerBridge(Logger.getLogger(this::class.qualifiedName)))
+        JSch.setLogger(JSchLogger(Logger.getLogger(this::class.qualifiedName)))
 
         System.getProperty("user.home")
             ?.let { Paths.get(it).resolve(".ssh") }
@@ -124,7 +124,7 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
 
     @Throws(IOException::class) @Suppress("UNCHECKED_CAST") override fun <A: BasicFileAttributes> readAttributes(path: Path, attributesType: Class<A>, vararg linkOptions: LinkOption): A {
         return checkPathAndApply(path) {
-            return@checkPathAndApply if (attributesType === BasicFileAttributes::javaClass || attributesType === SftpFileAttributes::javaClass) {
+            return@checkPathAndApply if (attributesType == BasicFileAttributes::class.java || attributesType == SftpFileAttributes::class.java) {
                 it.fileSystem.view(path.toString()).toFileAttributes() as A
             } else {
                 throw attributesNotSupported(attributesType)

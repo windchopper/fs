@@ -1,6 +1,7 @@
 package com.github.windchopper.fs.sftp
 
 import java.net.URI
+import java.time.Duration
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.reflect.KClass
@@ -13,6 +14,7 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
     val sessionIdentity: SessionIdentity
     val password: String?
     val bufferSize: Int
+    val channelInactivityDuration: Duration
 
     init {
         val host = valueFromEnvironment(environment, SftpConstants.HOST, String::class)?:uri.host.trimToNull()?:SftpConstants.DEFAULT_HOST
@@ -22,6 +24,7 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
         password = environment[SftpConstants.PASSWORD]?.toString()?:userInfoParts?.getOrNull(1)
         sessionIdentity = SessionIdentity(host, port, username)
         bufferSize = valueFromEnvironment(environment, SftpConstants.BUFFER_SIZE, Int::class, Integer::parseUnsignedInt)?:SftpConstants.DEFAULT_BUFFER_SIZE
+        channelInactivityDuration = valueFromEnvironment(environment, SftpConstants.CHANNEL_INACTIVITY_DURATION, Duration::class, Duration::parse)?:Duration.parse(SftpConstants.DEFAULT_CHANNEL_INACTIVITY_DURATION)
     }
 
     fun <T: Any> valueFromEnvironment(environment: Map<String, *>, key: String?, type: KClass<T>, converter: ((String) -> T)? = null): T? {

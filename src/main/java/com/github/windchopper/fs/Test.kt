@@ -1,9 +1,13 @@
 package com.github.windchopper.fs
 
+import com.github.windchopper.fs.sftp.SftpRoutines
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.logging.Logger
 
 object Test {
 
@@ -12,30 +16,31 @@ object Test {
         val uri = URI.create("sftp://oracle:Oracle33@vs-c06-szp-test-app.otr.ru")
         FileSystems.newFileSystem(uri, emptyMap<String, Any>()).use { fileSystem ->
             val homePath = fileSystem.getPath("/home/oracle")
-            System.out.printf("home: %s%n", homePath)
+            println("home: ${homePath}")
             val parentPath = homePath.parent
-            System.out.printf("parent: %s%n", parentPath)
+            println("parent: ${parentPath}")
             val homeRootPath = homePath.root
-            System.out.printf("root: %s%n", homeRootPath)
+            println("root: ${homeRootPath}")
             val nonAbsoluteHomePath = fileSystem.getPath("oracle")
-            System.out.printf("non-absolute home: %s%n", nonAbsoluteHomePath)
-            System.out.printf("home starts with parent: %s%n", homePath.startsWith(parentPath))
-            System.out.printf("home starts with root: %s%n", homePath.startsWith(homeRootPath))
-            System.out.printf("parent starts with home: %s%n", parentPath.startsWith(homePath))
-            System.out.printf("home ends with non-absolute home: %s%n", homePath.endsWith(nonAbsoluteHomePath))
-            System.out.printf("non-absolute home ends with home: %s%n", nonAbsoluteHomePath.endsWith(homePath))
-            System.out.printf("%n")
+            println("non-absolute home: ${nonAbsoluteHomePath}")
+            println("home starts with parent: ${homePath.startsWith(parentPath)}")
+            println("home starts with root: ${homePath.startsWith(homeRootPath)}")
+            println("parent starts with home: ${parentPath.startsWith(homePath)}")
+            println("home ends with non-absolute home: ${homePath.endsWith(nonAbsoluteHomePath)}")
+            println("non-absolute home ends with home: ${nonAbsoluteHomePath.endsWith(homePath)}")
+            println()
             for (rootPath in fileSystem.rootDirectories) {
                 list(rootPath)
             }
+
+            Logger.getLogger(SftpRoutines::class.qualifiedName).info("end")
         }
+
     }
 
-    fun list(path: Path?) {
-        val i = Files.list(path).iterator()
-        while (i.hasNext()) {
-            val childPath = i.next()
-            System.out.printf("%s%n", childPath)
+    fun list(path: Path) {
+        for (childPath in Files.list(path)) {
+            println("${childPath}")
             if (Files.isDirectory(childPath)) {
                 list(childPath)
             }
