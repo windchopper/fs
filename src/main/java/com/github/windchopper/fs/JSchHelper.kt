@@ -30,7 +30,8 @@ class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: D
     val channelThreadLocal = ThreadLocal<T>()
 
     @Suppress("UNCHECKED_CAST") fun connect(): T {
-        disconnectionJobThreadLocal.getAndRemove()?.cancel()
+        disconnectionJobThreadLocal.getAndRemove()
+            ?.cancel()
 
         return channelThreadLocal.get()
             ?.let {
