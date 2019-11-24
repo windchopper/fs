@@ -1,7 +1,5 @@
 package com.github.windchopper.fs.sftp
 
-import java.time.Duration
-
 object SftpConstants {
 
     const val HOST = "Sftp.host"
