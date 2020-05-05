@@ -32,11 +32,11 @@ interface SftpRoutines {
     }
 
     fun watchNotSupported(): UnsupportedOperationException {
-        throw UnsupportedOperationException("Couldn't watch remote file system")
+        return UnsupportedOperationException("Couldn't watch remote file system")
     }
 
     fun attributesNotSupported(type: Class<*>): UnsupportedOperationException {
-        throw UnsupportedOperationException("Attributes of type ${type.canonicalName} not supported")
+        return UnsupportedOperationException("Attributes of type ${type.canonicalName} not supported")
     }
 
     @Throws(IOException::class) fun <T> wrapNotIOException(expression: () -> T): T {
