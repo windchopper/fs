@@ -3,19 +3,23 @@ package com.github.windchopper.fs.sftp
 import com.jcraft.jsch.SftpATTRS
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
+import java.time.Instant
 
 class SftpFileAttributes(private val attributes: SftpATTRS): BasicFileAttributes {
 
+    private val lastModifiedTime: Instant = Instant.ofEpochSecond(attributes.mTime.toLong())
+    private val lastAccessedTime: Instant = Instant.ofEpochSecond(attributes.aTime.toLong())
+
     override fun lastModifiedTime(): FileTime {
-        TODO("not implemented")
+        return FileTime.from(lastModifiedTime)
     }
 
     override fun lastAccessTime(): FileTime {
-        TODO("not implemented")
+        return FileTime.from(lastAccessedTime)
     }
 
     override fun creationTime(): FileTime {
-        TODO("not implemented")
+        throw UnsupportedOperationException("No creation time available through SFTP")
     }
 
     override fun isRegularFile(): Boolean {
