@@ -10,7 +10,7 @@ fun Int.nullWhenNotPositive(): Int? = if (this < 0) {
     this
 }
 
-fun <T> ThreadLocal<T>.getAndRemove(): T? = get()
+fun <T> ThreadLocal<T>.takeAway(): T? = get()
     ?.let {
         remove()
         it

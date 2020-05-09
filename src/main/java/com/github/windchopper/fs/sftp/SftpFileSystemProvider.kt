@@ -127,7 +127,7 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
             return@checkPathAndApply if (attributesType == BasicFileAttributes::class.java || attributesType == SftpFileAttributes::class.java) {
                 it.fileSystem.view(path.toString()).toFileAttributes() as A
             } else {
-                throw attributesNotSupported(attributesType)
+                throw UnsupportedOperationException("Attributes of type ${attributesType.canonicalName} not supported")
             }
         }
     }

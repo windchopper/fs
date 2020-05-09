@@ -45,7 +45,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
             }
             .map {
                 if (it.filename == ".") {
-                    SftpFile(path.substringBeforeLast(SftpConstants.SEPARATOR), path.substringAfterLast(SftpConstants.SEPARATOR), it.attrs)
+                    SftpFile(path.substringBeforeLast(SftpConstants.PATH_SEPARATOR), path.substringAfterLast(SftpConstants.PATH_SEPARATOR), it.attrs)
                 } else {
                     SftpFile(path, it.filename, it.attrs)
                         .let {
@@ -63,7 +63,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) fun list(path: String): List<SftpFile> {
-        return (if (path == SftpConstants.SEPARATOR) path else path.removeSuffix(SftpConstants.SEPARATOR))
+        return (if (path == SftpConstants.PATH_SEPARATOR) path else path.removeSuffix(SftpConstants.PATH_SEPARATOR))
             .let {
                 listBuffer[it]
                     ?:doWithChannel(helper) {
@@ -85,9 +85,8 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     fun newDirectoryStream(path: SftpPath, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {
-        return SftpDirectoryStream(list(path.toString())
-            .map { it.toPath(this, configuration.sessionIdentity) }
-            .toMutableList())
+        return SftpDirectoryStream(filter, list(path.toString())
+            .map { it.toPath(this, configuration.sessionIdentity) })
     }
 
     override fun isOpen(): Boolean {
@@ -99,7 +98,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun getSeparator(): String {
-        return SftpConstants.SEPARATOR
+        return SftpConstants.PATH_SEPARATOR
     }
 
     @Throws(IOException::class) fun realPath(path: String?): String {
@@ -109,7 +108,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun getRootDirectories(): Iterable<Path> {
-        return listOf(SftpPath(this, configuration.sessionIdentity, SftpConstants.SEPARATOR))
+        return listOf(SftpPath(this, configuration.sessionIdentity, SftpConstants.PATH_SEPARATOR))
     }
 
     override fun getFileStores(): Iterable<FileStore> {
@@ -133,7 +132,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun newWatchService(): WatchService {
-        throw watchNotSupported()
+        throw UnsupportedOperationException("Couldn't watch remote file system")
     }
 
 }

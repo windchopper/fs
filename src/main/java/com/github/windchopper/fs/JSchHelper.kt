@@ -1,6 +1,6 @@
 package com.github.windchopper.fs
 
-import com.github.windchopper.fs.sftp.getAndRemove
+import com.github.windchopper.fs.sftp.takeAway
 import com.jcraft.jsch.*
 import kotlinx.coroutines.*
 import java.time.Duration
@@ -30,7 +30,7 @@ class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: D
     val channelThreadLocal = ThreadLocal<T>()
 
     @Suppress("UNCHECKED_CAST") fun connect(): T {
-        disconnectionJobThreadLocal.getAndRemove()
+        disconnectionJobThreadLocal.takeAway()
             ?.cancel()
 
         return channelThreadLocal.get()
@@ -42,7 +42,7 @@ class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: D
                     channelThreadLocal.set(it as T)
                     it.connect()
                     it
-                } as T
+                }
     }
 
     fun disconnect() {

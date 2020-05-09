@@ -13,6 +13,6 @@ object SftpConstants {
     const val DEFAULT_BUFFER_SIZE = 1000
     const val DEFAULT_CHANNEL_INACTIVITY_DURATION = "PT30S"
     const val SCHEME = "sftp"
-    const val SEPARATOR = "/"
+    const val PATH_SEPARATOR = "/"
 
 }
