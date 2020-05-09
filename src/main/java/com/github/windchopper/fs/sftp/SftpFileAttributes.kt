@@ -35,7 +35,7 @@ class SftpFileAttributes(private val attributes: SftpATTRS): BasicFileAttributes
     }
 
     override fun isOther(): Boolean {
-        return false
+        return !(attributes.isChr || attributes.isBlk || attributes.isDir || attributes.isLink)
     }
 
     override fun size(): Long {
