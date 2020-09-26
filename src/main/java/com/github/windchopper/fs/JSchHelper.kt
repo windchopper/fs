@@ -42,7 +42,7 @@ class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: D
                     channelThreadLocal.set(it as T)
                     it.connect()
                     it
-                }
+                } as T
     }
 
     fun disconnect() {
