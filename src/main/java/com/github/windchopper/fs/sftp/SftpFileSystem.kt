@@ -13,7 +13,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     val viewBuffer: MutableMap<String?, SftpFile> = LRUMap(configuration.bufferSize)
     val listBuffer: MutableMap<String?, List<SftpFile>> = LRUMap(configuration.bufferSize)
-    val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, wrapNotIOException {
+    val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, wrapExceptionTo(::IOException) {
             with (configuration) {
                 with (sessionIdentity) {
                     provider.secureChannel.getSession(username, host, port)
@@ -29,8 +29,8 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     fun view(path: String): SftpFile {
         return viewBuffer[path]
-            ?:doWithChannel(helper) {
-                fillInBuffers(path, it.ls(path))
+            ?:helper.performWithinChannel { channel ->
+                fillInBuffers(path, channel.ls(path))
                 viewBuffer[path]
             }
             ?:throw FileNotFoundException(path)
@@ -66,8 +66,8 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
         return (if (path == SftpConstants.PATH_SEPARATOR) path else path.removeSuffix(SftpConstants.PATH_SEPARATOR))
             .let {
                 listBuffer[it]
-                    ?:doWithChannel(helper) {
-                        fillInBuffers(path, it.ls(path))
+                    ?:helper.performWithinChannel { channel ->
+                        fillInBuffers(path, channel.ls(path))
                     }
             }
     }
@@ -102,7 +102,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) fun realPath(path: String?): String {
-        return doWithChannel(helper) {
+        return helper.performWithinChannel {
             it.realpath(path)
         }
     }

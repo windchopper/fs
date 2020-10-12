@@ -24,7 +24,7 @@ class SftpFileSystemProvider: FileSystemProvider(), SftpRoutines {
         System.getProperty("user.home")
             ?.let { Paths.get(it).resolve(".ssh") }
             ?.let {
-                wrapNotIOException {
+                wrapExceptionTo(::IOException) {
                     listOf(it.resolve("id_rsa"), it.resolve("id_dsa"), it.resolve("id_ecdsa"))
                         .filter { Files.exists(it) }
                         .forEach { secureChannel.addIdentity(it.toRealPath().toString()) }

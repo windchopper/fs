@@ -17,14 +17,14 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
     val channelInactivityDuration: Duration
 
     init {
-        val host = valueFromEnvironment(environment, SftpConstants.HOST, String::class)?:uri.host.trimToNull()?:SftpConstants.DEFAULT_HOST
-        val port = valueFromEnvironment(environment, SftpConstants.PORT, Int::class, Integer::parseUnsignedInt)?:uri.port.nullWhenNotPositive()?:SftpConstants.DEFAULT_PORT
+        val host = valueFromEnvironment(environment, SftpProperties.HOST, String::class)?:uri.host.trimToNull()?:SftpConstants.DEFAULT_HOST
+        val port = valueFromEnvironment(environment, SftpProperties.PORT, Int::class, Integer::parseUnsignedInt)?:uri.port.positive()?:SftpConstants.DEFAULT_PORT
         val userInfoParts = uri.userInfo?.trimToNull()?.split(":")
-        val username = environment[SftpConstants.USERNAME]?.toString()?:userInfoParts?.getOrNull(0)
-        password = environment[SftpConstants.PASSWORD]?.toString()?:userInfoParts?.getOrNull(1)
+        val username = environment[SftpProperties.USERNAME]?.toString()?:userInfoParts?.getOrNull(0)
+        password = environment[SftpProperties.PASSWORD]?.toString()?:userInfoParts?.getOrNull(1)
         sessionIdentity = SessionIdentity(host, port, username)
-        bufferSize = valueFromEnvironment(environment, SftpConstants.BUFFER_SIZE, Int::class, Integer::parseUnsignedInt)?:SftpConstants.DEFAULT_BUFFER_SIZE
-        channelInactivityDuration = valueFromEnvironment(environment, SftpConstants.CHANNEL_INACTIVITY_DURATION, Duration::class, Duration::parse)?:Duration.parse(SftpConstants.DEFAULT_CHANNEL_INACTIVITY_DURATION)
+        bufferSize = valueFromEnvironment(environment, SftpProperties.BUFFER_SIZE, Int::class, Integer::parseUnsignedInt)?:SftpConstants.DEFAULT_BUFFER_SIZE
+        channelInactivityDuration = valueFromEnvironment(environment, SftpProperties.CHANNEL_INACTIVITY_DURATION, Duration::class, Duration::parse)?:Duration.parse(SftpConstants.DEFAULT_CHANNEL_INACTIVITY_DURATION)
     }
 
     fun <T: Any> valueFromEnvironment(environment: Map<String, *>, key: String?, type: KClass<T>, converter: ((String) -> T)? = null): T? {

@@ -1,8 +1,5 @@
 package com.github.windchopper.fs.sftp
 
-import com.github.windchopper.fs.JSchHelper
-import com.jcraft.jsch.Channel
-import java.io.IOException
 import java.nio.file.Path
 import java.nio.file.ProviderMismatchException
 
@@ -27,31 +24,9 @@ interface SftpRoutines {
         return ProviderMismatchException(paths
             .map { it.javaClass }
             .filter { it != SftpPath::class.java }
-            .map { it.canonicalName }
-            .joinToString(", ", "Path of type(s) ", " is not belonging to used provider"))
-    }
-
-    @Throws(IOException::class) fun <T> wrapNotIOException(expression: () -> T): T {
-        return try {
-            expression.invoke()
-        } catch (thrown: Exception) {
-            when (thrown) {
-                is IOException -> throw thrown
-                else -> throw IOException(thrown)
-            }
-        }
-    }
-
-    @Throws(IOException::class) fun <T, C: Channel> doWithChannel(helper: JSchHelper<C>, action: (C) -> T): T {
-        return wrapNotIOException {
-            val channel = helper.connect()
-
-            try {
-                action(channel)
-            } finally {
-                helper.disconnect()
-            }
-        }
+            .joinToString(", ", "Path of type(s) ", " is not belonging to used provider") {
+                it.canonicalName
+            })
     }
 
 }

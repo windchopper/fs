@@ -6,9 +6,9 @@ import kotlinx.coroutines.*
 import java.time.Duration
 import kotlin.reflect.KClass
 
-class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: Duration, val session: Session) {
+class JSchHelper<C: Channel>(val type: Type<C>, val channelInactivityDuration: Duration, val session: Session) {
 
-    class Type<T: Channel> internal constructor(val code: String, val type: KClass<T>) {
+    class Type<C: Channel> internal constructor(val code: String, val type: KClass<C>) {
 
         companion object {
 
@@ -27,9 +27,9 @@ class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: D
     }
 
     val disconnectionJobThreadLocal = ThreadLocal<Job>()
-    val channelThreadLocal = ThreadLocal<T>()
+    val channelThreadLocal = ThreadLocal<C>()
 
-    @Suppress("UNCHECKED_CAST") fun connect(): T {
+    @Suppress("UNCHECKED_CAST") fun connect(): C {
         disconnectionJobThreadLocal.takeAway()
             ?.cancel()
 
@@ -39,10 +39,10 @@ class JSchHelper<T: Channel>(val type: Type<T>, val channelInactivityDuration: D
             }
             ?:session.openChannel(type.code)
                 .let {
-                    channelThreadLocal.set(it as T)
+                    channelThreadLocal.set(it as C)
                     it.connect()
                     it
-                } as T
+                } as C
     }
 
     fun disconnect() {
