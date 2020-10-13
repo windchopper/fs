@@ -5,7 +5,7 @@ import java.net.URI
 import java.nio.file.*
 import java.util.*
 
-class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdentity: SftpConfiguration.SessionIdentity, private val absolute: Boolean, vararg pathElements: String): Path, SftpRoutines {
+class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdentity: SftpConfiguration.SessionIdentity, private val absolute: Boolean, vararg pathElements: String): Path {
 
     private val pathElements: Array<String> = arrayOf(*pathElements)
 
@@ -66,14 +66,14 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun startsWith(path: Path): Boolean {
-        return checkPathAndApply(path) {
+        return path.toSftpPath().let {
             var j = 0
             val jcount = it.pathElements.size
             var i = 0
             val icount = pathElements.size
             while (i < icount && j < jcount) {
                 if (pathElements[i] != it.pathElements[j]) {
-                    return@checkPathAndApply false
+                    return false
                 }
                 i++
                 j++
@@ -83,12 +83,12 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun endsWith(path: Path): Boolean {
-        return checkPathAndApply(path) {
+        return path.toSftpPath().let {
             var j = it.pathElements.size
             var i = pathElements.size
             while (--i >= 0 && --j >= 0) {
                 if (pathElements[i] != it.pathElements[j]) {
-                    return@checkPathAndApply false
+                    return false
                 }
             }
             j == -1
@@ -100,13 +100,11 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun resolve(path: Path): Path {
-        return checkPathAndApply(path) {
-            SftpPath(fileSystem, sessionIdentity, *pathElements.plus(it.pathElements))
-        }
+        return SftpPath(fileSystem, sessionIdentity, *pathElements.plus(path.toSftpPath().pathElements))
     }
 
     override fun relativize(path: Path): Path {
-        return checkPathAndApply<Path>(path) { TODO("not implemented") }
+        TODO("not implemented")
     }
 
     override fun toUri(): URI {
@@ -126,7 +124,7 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun compareTo(other: Path): Int {
-        return checkPathAndApply(other) { Arrays.compare(pathElements, it.pathElements) }
+        return Arrays.compare(pathElements, other.toSftpPath().pathElements)
     }
 
     fun toString(prefix: String): String {

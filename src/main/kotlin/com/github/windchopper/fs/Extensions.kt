@@ -1,9 +1,6 @@
-package com.github.windchopper.fs.sftp
+package com.github.windchopper.fs
 
-import com.github.windchopper.fs.JSchHelper
-import com.jcraft.jsch.Channel
 import org.apache.commons.lang3.StringUtils
-import java.io.IOException
 
 fun String.trimToNull(): String? = StringUtils.trimToNull(this)
 
@@ -28,12 +25,3 @@ inline fun <R, reified E: Exception> wrapExceptionTo(wrapper: (thrown: Exception
     }
 }
 
-fun <T, C: Channel> JSchHelper<C>.performWithinChannel(action: (channel: C) -> T): T = wrapExceptionTo(::IOException) {
-    val channel = connect()
-
-    try {
-        action(channel)
-    } finally {
-        disconnect()
-    }
-}

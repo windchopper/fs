@@ -1,6 +1,7 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.JSchHelper
+import com.github.windchopper.fs.wrapExceptionTo
 import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
@@ -9,7 +10,7 @@ import java.nio.file.*
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.*
 
-class SftpFileSystem(private val provider: SftpFileSystemProvider, private val configuration: SftpConfiguration): FileSystem(), SftpRoutines {
+class SftpFileSystem(private val provider: SftpFileSystemProvider, private val configuration: SftpConfiguration): FileSystem() {
 
     val viewBuffer: MutableMap<String?, SftpFile> = LRUMap(configuration.bufferSize)
     val listBuffer: MutableMap<String?, List<SftpFile>> = LRUMap(configuration.bufferSize)

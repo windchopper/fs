@@ -1,5 +1,7 @@
 package com.github.windchopper.fs.sftp
 
+import com.github.windchopper.fs.positive
+import com.github.windchopper.fs.trimToNull
 import java.net.URI
 import java.time.Duration
 import java.util.logging.Level

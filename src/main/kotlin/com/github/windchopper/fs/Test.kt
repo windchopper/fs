@@ -1,8 +1,5 @@
 package com.github.windchopper.fs
 
-import com.github.windchopper.fs.sftp.SftpRoutines
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -33,7 +30,7 @@ object Test {
                 list(rootPath)
             }
 
-            Logger.getLogger(SftpRoutines::class.qualifiedName).info("end")
+            Logger.getLogger(Test::class.qualifiedName).info("end")
         }
 
     }

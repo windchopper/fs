@@ -1,6 +1,6 @@
 package com.github.windchopper.fs
 
-import com.github.windchopper.fs.sftp.takeAway
+import com.github.windchopper.fs.takeAway
 import com.jcraft.jsch.*
 import kotlinx.coroutines.*
 import java.time.Duration
@@ -42,7 +42,7 @@ class JSchHelper<C: Channel>(val type: Type<C>, val channelInactivityDuration: D
                     channelThreadLocal.set(it as C)
                     it.connect()
                     it
-                } as C
+                }
     }
 
     fun disconnect() {
