@@ -1,27 +1,26 @@
 package com.github.windchopper.fs
 
-import java.util.logging.Level
-import java.util.logging.Logger
+import com.jcraft.jsch.Logger.*
+import org.slf4j.Logger
 
 class JSchLogger(private val logger: Logger): com.jcraft.jsch.Logger {
 
     override fun isEnabled(level: Int): Boolean {
-        return logger.isLoggable(translateLevel(level))
+        return when (level) {
+            DEBUG -> logger.isDebugEnabled
+            INFO -> logger.isInfoEnabled
+            WARN -> logger.isWarnEnabled
+            ERROR, FATAL -> logger.isErrorEnabled
+            else -> false
+        }
     }
 
     override fun log(level: Int, message: String) {
-        logger.log(translateLevel(level), message)
-    }
-
-    companion object {
-        fun translateLevel(level: Int): Level {
-            return when (level) {
-                com.jcraft.jsch.Logger.DEBUG -> Level.FINE
-                com.jcraft.jsch.Logger.INFO -> Level.INFO
-                com.jcraft.jsch.Logger.WARN -> Level.WARNING
-                com.jcraft.jsch.Logger.ERROR, com.jcraft.jsch.Logger.FATAL -> Level.SEVERE
-                else -> Level.OFF
-            }
+        when (level) {
+            DEBUG -> logger.debug(message)
+            INFO -> logger.info(message)
+            WARN -> logger.warn(message)
+            ERROR, FATAL -> logger.error(message)
         }
     }
 

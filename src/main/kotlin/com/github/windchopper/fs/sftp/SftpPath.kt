@@ -136,3 +136,6 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
 }
+
+fun Path.toSftpPath(): SftpPath = this as? SftpPath
+    ?:throw ProviderMismatchException("Path ${javaClass.canonicalName} is not belonging to ${SftpFileSystemProvider::class.simpleName}")

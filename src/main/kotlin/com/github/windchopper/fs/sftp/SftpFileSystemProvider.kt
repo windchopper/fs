@@ -1,6 +1,7 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.JSchLogger
+import com.github.windchopper.fs.logger
 import com.github.windchopper.fs.wrapExceptionTo
 import com.jcraft.jsch.JSch
 import java.io.IOException
@@ -12,7 +13,6 @@ import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileAttributeView
 import java.nio.file.spi.FileSystemProvider
 import java.util.concurrent.ConcurrentHashMap
-import java.util.logging.Logger
 
 class SftpFileSystemProvider: FileSystemProvider() {
 
@@ -20,7 +20,7 @@ class SftpFileSystemProvider: FileSystemProvider() {
     val connectedFileSystems: MutableMap<SftpConfiguration.SessionIdentity, SftpFileSystem> = ConcurrentHashMap()
 
     init {
-        JSch.setLogger(JSchLogger(Logger.getLogger(this::class.qualifiedName)))
+        JSch.setLogger(JSchLogger(logger<SftpFileSystemProvider>()))
 
         System.getProperty("user.home")
             ?.let { Paths.get(it).resolve(".ssh") }
