@@ -11,6 +11,7 @@ object Test {
     @JvmStatic
     fun main(args: Array<String>) {
         val uri = URI.create("sftp://oracle:Oracle33@vs-c06-szp-test-app.otr.ru")
+
         FileSystems.newFileSystem(uri, emptyMap<String, Any>()).use { fileSystem ->
             val homePath = fileSystem.getPath("/home/oracle")
             println("home: ${homePath}")

@@ -1,6 +1,7 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.JSchHelper
+import com.github.windchopper.fs.performConnected
 import com.github.windchopper.fs.wrapExceptionTo
 import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
@@ -30,7 +31,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     fun view(path: String): SftpFile {
         return viewBuffer[path]
-            ?:helper.performWithinChannel { channel ->
+            ?:helper.performConnected { channel ->
                 fillInBuffers(path, channel.ls(path))
                 viewBuffer[path]
             }
@@ -67,7 +68,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
         return (if (path == SftpConstants.PATH_SEPARATOR) path else path.removeSuffix(SftpConstants.PATH_SEPARATOR))
             .let {
                 listBuffer[it]
-                    ?:helper.performWithinChannel { channel ->
+                    ?:helper.performConnected { channel ->
                         fillInBuffers(path, channel.ls(path))
                     }
             }
@@ -103,7 +104,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) fun realPath(path: String?): String {
-        return helper.performWithinChannel {
+        return helper.performConnected {
             it.realpath(path)
         }
     }
