@@ -1,5 +1,6 @@
-package com.github.windchopper.fs
+package com.github.windchopper.fs.internal
 
+import com.github.windchopper.fs.internal.jsch.JSchHelper
 import com.jcraft.jsch.Channel
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger

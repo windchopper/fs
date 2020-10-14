@@ -1,4 +1,4 @@
-package com.github.windchopper.fs
+package com.github.windchopper.fs.internal.jsch
 
 import com.jcraft.jsch.Logger.*
 import org.slf4j.Logger

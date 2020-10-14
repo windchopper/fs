@@ -1,7 +1,7 @@
 package com.github.windchopper.fs.sftp
 
-import com.github.windchopper.fs.logger
-import com.github.windchopper.fs.positive
+import com.github.windchopper.fs.internal.logger
+import com.github.windchopper.fs.internal.positive
 import java.net.URI
 import java.time.Duration
 import kotlin.reflect.KClass

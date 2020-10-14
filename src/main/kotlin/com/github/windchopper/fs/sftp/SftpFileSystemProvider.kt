@@ -1,8 +1,8 @@
 package com.github.windchopper.fs.sftp
 
-import com.github.windchopper.fs.JSchLogger
-import com.github.windchopper.fs.logger
-import com.github.windchopper.fs.wrapExceptionTo
+import com.github.windchopper.fs.internal.jsch.JSchLogger
+import com.github.windchopper.fs.internal.logger
+import com.github.windchopper.fs.internal.wrapExceptionTo
 import com.jcraft.jsch.JSch
 import java.io.IOException
 import java.net.URI

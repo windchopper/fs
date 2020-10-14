@@ -1,6 +1,6 @@
-package com.github.windchopper.fs
+package com.github.windchopper.fs.internal.jsch
 
-import com.github.windchopper.fs.takeAway
+import com.github.windchopper.fs.internal.takeAway
 import com.jcraft.jsch.*
 import kotlinx.coroutines.*
 import java.time.Duration

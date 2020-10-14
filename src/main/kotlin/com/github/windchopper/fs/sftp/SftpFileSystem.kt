@@ -1,8 +1,8 @@
 package com.github.windchopper.fs.sftp
 
-import com.github.windchopper.fs.JSchHelper
-import com.github.windchopper.fs.performConnected
-import com.github.windchopper.fs.wrapExceptionTo
+import com.github.windchopper.fs.internal.jsch.JSchHelper
+import com.github.windchopper.fs.internal.performConnected
+import com.github.windchopper.fs.internal.wrapExceptionTo
 import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
