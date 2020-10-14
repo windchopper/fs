@@ -1,6 +1,7 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.logger
+import com.github.windchopper.fs.positive
 import java.net.URI
 import java.time.Duration
 import kotlin.reflect.KClass
@@ -82,7 +83,7 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
             uriReader = URI::getHost)
 
         val port = DefaultedProperty(PropertyNames.PORT, Int::class, 22,
-            String::toInt, URI::getPort)
+            String::toInt, { it.port.positive() })
 
         val username = Property(PropertyNames.USERNAME, String::class,
             uriReader = { it.userInfo?.split(":")?.getOrNull(0) })
@@ -90,11 +91,11 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
         val password = Property(PropertyNames.PASSWORD, String::class,
             uriReader = { it.userInfo?.split(":")?.getOrNull(1) })
 
-        val bufferSize = DefaultedProperty(PropertyNames.BUFFER_SIZE, Int::class, 1000,
+        val bufferSize = DefaultedProperty(PropertyNames.BUFFER_SIZE, Int::class, 10_000,
             String::toInt)
 
         val channelInactivityDuration = DefaultedProperty(PropertyNames.CHANNEL_INACTIVITY_DURATION, Duration::class, Duration.ofSeconds(30),
-            { Duration.parse(it) })
+            Duration::parse)
 
     }
 

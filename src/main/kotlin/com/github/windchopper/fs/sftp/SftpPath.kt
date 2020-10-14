@@ -10,10 +10,10 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     private val pathElements: Array<String> = arrayOf(*pathElements)
 
     constructor(fileSystem: SftpFileSystem, connectionIdentity: SftpConfiguration.SessionIdentity, vararg pathElements: String): this(
-        fileSystem, connectionIdentity, pathElements.joinToString(SftpConstants.PATH_SEPARATOR))
+        fileSystem, connectionIdentity, pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR))
 
     constructor(fileSystem: SftpFileSystem, connectionIdentity: SftpConfiguration.SessionIdentity, pathString: String): this(
-        fileSystem, connectionIdentity, pathString.startsWith(SftpConstants.PATH_SEPARATOR), *pathString.split(SftpConstants.PATH_SEPARATOR)
+        fileSystem, connectionIdentity, pathString.startsWith(SftpFileSystem.PATH_SEPARATOR), *pathString.split(SftpFileSystem.PATH_SEPARATOR)
             .filter { it.isNotBlank() }
             .toTypedArray())
 
@@ -26,7 +26,7 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun getRoot(): Path? {
-        return if (absolute && pathElements.isNotEmpty()) SftpPath(fileSystem, sessionIdentity, SftpConstants.PATH_SEPARATOR) else null
+        return if (absolute && pathElements.isNotEmpty()) SftpPath(fileSystem, sessionIdentity, SftpFileSystem.PATH_SEPARATOR) else null
     }
 
     override fun getFileName(): Path? {
@@ -37,7 +37,7 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
         return if (pathElements.size > 1) {
             SftpPath(fileSystem, sessionIdentity, absolute, *pathElements.copyOfRange(0, pathElements.size - 1))
         } else if (pathElements.isNotEmpty() && absolute) {
-            SftpPath(fileSystem, sessionIdentity, SftpConstants.PATH_SEPARATOR)
+            SftpPath(fileSystem, sessionIdentity, SftpFileSystem.PATH_SEPARATOR)
         } else null
     }
 
@@ -108,11 +108,11 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun toUri(): URI {
-        return URI(SftpConstants.SCHEME, sessionIdentity.username, sessionIdentity.host, sessionIdentity.port, pathElements.joinToString(SftpConstants.PATH_SEPARATOR), null, null)
+        return URI(SftpFileSystem.SCHEME, sessionIdentity.username, sessionIdentity.host, sessionIdentity.port, pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR), null, null)
     }
 
     override fun toAbsolutePath(): Path {
-        return if (absolute) this else SftpPath(fileSystem, sessionIdentity, toString(SftpConstants.PATH_SEPARATOR))
+        return if (absolute) this else SftpPath(fileSystem, sessionIdentity, toString(SftpFileSystem.PATH_SEPARATOR))
     }
 
     @Throws(IOException::class) override fun toRealPath(vararg linkOptions: LinkOption): Path {
@@ -128,11 +128,11 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     fun toString(prefix: String): String {
-        return pathElements.joinToString(SftpConstants.PATH_SEPARATOR, prefix)
+        return pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR, prefix)
     }
 
     override fun toString(): String {
-        return toString(if (absolute) SftpConstants.PATH_SEPARATOR else "")
+        return toString(if (absolute) SftpFileSystem.PATH_SEPARATOR else "")
     }
 
 }

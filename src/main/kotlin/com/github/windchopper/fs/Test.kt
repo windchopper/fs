@@ -15,10 +15,13 @@ object Test {
         FileSystems.newFileSystem(uri, emptyMap<String, Any>()).use { fileSystem ->
             val homePath = fileSystem.getPath("/home/oracle")
             println("home: ${homePath}")
+
             val parentPath = homePath.parent
             println("parent: ${parentPath}")
+
             val homeRootPath = homePath.root
             println("root: ${homeRootPath}")
+
             val nonAbsoluteHomePath = fileSystem.getPath("oracle")
             println("non-absolute home: ${nonAbsoluteHomePath}")
             println("home starts with parent: ${homePath.startsWith(parentPath)}")
@@ -27,11 +30,12 @@ object Test {
             println("home ends with non-absolute home: ${homePath.endsWith(nonAbsoluteHomePath)}")
             println("non-absolute home ends with home: ${nonAbsoluteHomePath.endsWith(homePath)}")
             println()
+
             for (rootPath in fileSystem.rootDirectories) {
                 list(rootPath)
             }
 
-            Logger.getLogger(Test::class.qualifiedName).info("end")
+            logger<Test>().info("end")
         }
 
     }

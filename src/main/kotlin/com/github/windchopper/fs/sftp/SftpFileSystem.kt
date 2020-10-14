@@ -13,6 +13,13 @@ import java.util.*
 
 class SftpFileSystem(private val provider: SftpFileSystemProvider, private val configuration: SftpConfiguration): FileSystem() {
 
+    companion object {
+
+        const val SCHEME = "sftp"
+        const val PATH_SEPARATOR = "/"
+
+    }
+
     val viewBuffer: MutableMap<String?, SftpFile> = LRUMap(configuration.bufferSize)
     val listBuffer: MutableMap<String?, List<SftpFile>> = LRUMap(configuration.bufferSize)
     val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, wrapExceptionTo(::IOException) {
@@ -47,7 +54,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
             }
             .map {
                 if (it.filename == ".") {
-                    SftpFile(path.substringBeforeLast(SftpConstants.PATH_SEPARATOR), path.substringAfterLast(SftpConstants.PATH_SEPARATOR), it.attrs)
+                    SftpFile(path.substringBeforeLast(PATH_SEPARATOR), path.substringAfterLast(PATH_SEPARATOR), it.attrs)
                 } else {
                     SftpFile(path, it.filename, it.attrs)
                         .let {
@@ -65,7 +72,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     @Throws(IOException::class) fun list(path: String): List<SftpFile> {
-        return (if (path == SftpConstants.PATH_SEPARATOR) path else path.removeSuffix(SftpConstants.PATH_SEPARATOR))
+        return (if (path == PATH_SEPARATOR) path else path.removeSuffix(PATH_SEPARATOR))
             .let {
                 listBuffer[it]
                     ?:helper.performConnected { channel ->
@@ -100,7 +107,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun getSeparator(): String {
-        return SftpConstants.PATH_SEPARATOR
+        return PATH_SEPARATOR
     }
 
     @Throws(IOException::class) fun realPath(path: String?): String {
@@ -110,7 +117,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun getRootDirectories(): Iterable<Path> {
-        return listOf(SftpPath(this, configuration.sessionIdentity, SftpConstants.PATH_SEPARATOR))
+        return listOf(SftpPath(this, configuration.sessionIdentity, PATH_SEPARATOR))
     }
 
     override fun getFileStores(): Iterable<FileStore> {

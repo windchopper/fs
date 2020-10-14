@@ -5,7 +5,7 @@ import com.jcraft.jsch.SftpATTRS
 class SftpFile(val path: String, val name: String, val attributes: SftpATTRS) {
 
     fun toAbsolutePath(): String {
-        return (if (path == SftpConstants.PATH_SEPARATOR) "" else path) + SftpConstants.PATH_SEPARATOR + name
+        return (if (path == SftpFileSystem.PATH_SEPARATOR) "" else path) + SftpFileSystem.PATH_SEPARATOR + name
     }
 
     fun toPath(fileSystem: SftpFileSystem, sessionIdentity: SftpConfiguration.SessionIdentity): SftpPath {

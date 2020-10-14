@@ -40,7 +40,7 @@ class SftpFileSystemProvider: FileSystemProvider() {
     }
 
     override fun getScheme(): String {
-        return SftpConstants.SCHEME
+        return SftpFileSystem.SCHEME
     }
 
     override fun newFileSystem(uri: URI, environment: Map<String, *>): FileSystem {
