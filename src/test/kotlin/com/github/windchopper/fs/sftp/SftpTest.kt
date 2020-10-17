@@ -1,13 +1,19 @@
-@file:Suppress("UNUSED_ANONYMOUS_PARAMETER")
+@file:Suppress("UNUSED_ANONYMOUS_PARAMETER", "NestedLambdaShadowedImplicitParameter")
 
 package com.github.windchopper.fs.sftp
 
+import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory
 import org.apache.sshd.server.SshServer
 import org.apache.sshd.server.auth.password.PasswordAuthenticator
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider
-import org.junit.jupiter.api.*
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.api.io.TempDir
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -18,12 +24,23 @@ class SftpTest {
 
     lateinit var server: SshServer
 
-    @BeforeAll fun initialize() {
-        server = SshServer.setUpDefaultServer().also {
-            it.port = 22
-            it.keyPairProvider = SimpleGeneratorHostKeyProvider()
-            it.passwordAuthenticator = PasswordAuthenticator { username, password, session -> true }
-            it.start()
+    @BeforeAll fun initialize(@TempDir tempDirPath: Path) {
+        listOf("dir_1", "dir_2", "dir_3")
+            .map(tempDirPath::resolve)
+            .forEach(Files::createDirectory)
+
+        server = SshServer.setUpDefaultServer()
+
+        with (server) {
+            port = 22
+            keyPairProvider = SimpleGeneratorHostKeyProvider()
+            passwordAuthenticator = PasswordAuthenticator { username, password, session -> true }
+            subsystemFactories = listOf(SftpSubsystemFactory())
+            fileSystemFactory = VirtualFileSystemFactory().also { fileSystemFactory ->
+                fileSystemFactory.defaultHomeDir = tempDirPath
+            }
+
+            start()
         }
     }
 
@@ -53,10 +70,12 @@ class SftpTest {
         }
     }
 
-    @Test @Disabled fun testListFiles() {
+    @Test fun testListFiles() {
+        val files = HashSet<String>()
+
         fun list(path: Path) {
+            files.add(path.toString())
             for (childPath in Files.list(path)) {
-                println("${childPath}")
                 if (Files.isDirectory(childPath)) {
                     list(childPath)
                 }
@@ -68,6 +87,8 @@ class SftpTest {
                 list(rootPath)
             }
         }
+
+        assertEquals(setOf("/", "/dir_1", "/dir_2", "/dir_3"), files)
     }
 
 }
