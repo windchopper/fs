@@ -75,8 +75,10 @@ class SftpFileSystemProvider: FileSystemProvider() {
         return getFileSystem(uri).getPath(uri.path)
     }
 
-    @Throws(IOException::class) override fun newByteChannel(path: Path, openOptionSet: Set<OpenOption?>, vararg fileAttributes: FileAttribute<*>?): SeekableByteChannel {
-        TODO("not implemented")
+    @Throws(IOException::class) override fun newByteChannel(path: Path, openOptionSet: Set<OpenOption>, vararg fileAttributes: FileAttribute<*>): SeekableByteChannel {
+        return path.toSftpPath().let {
+            it.fileSystem.newByteChannel(it)
+        }
     }
 
     @Throws(IOException::class) override fun newDirectoryStream(path: Path, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {

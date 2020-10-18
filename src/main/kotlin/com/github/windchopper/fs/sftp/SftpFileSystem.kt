@@ -7,6 +7,8 @@ import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.nio.channels.Channels
+import java.nio.channels.SeekableByteChannel
 import java.nio.file.*
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.*
@@ -96,6 +98,21 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     fun newDirectoryStream(path: SftpPath, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {
         return SftpDirectoryStream(filter, list(path.toString())
             .map { it.toPath(this, configuration.sessionIdentity) })
+    }
+
+    fun newByteChannel(path: SftpPath): SeekableByteChannel {
+        return helper.performConnected { channel ->
+            // todo SftpFileChannel(helper, path)
+            // full download for now
+
+            val tempFilePath = Files.createTempFile("sftp-", "-download")
+
+            Files.newOutputStream(tempFilePath).use { outputStream ->
+                channel.get(path.toAbsolutePath().toString(), outputStream)
+            }
+
+            Files.newByteChannel(tempFilePath, StandardOpenOption.DELETE_ON_CLOSE)
+        }
     }
 
     override fun isOpen(): Boolean {

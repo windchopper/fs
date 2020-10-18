@@ -7,11 +7,8 @@ import org.apache.sshd.server.SshServer
 import org.apache.sshd.server.auth.password.PasswordAuthenticator
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory
-import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
 import java.net.URI
@@ -22,12 +19,14 @@ import java.nio.file.Path
 @TestInstance(Lifecycle.PER_CLASS)
 class SftpTest {
 
+    companion object {
+        const val TEXT_FILE_CONTENT = "Some short text here."
+    }
+
     var server: SshServer = SshServer.setUpDefaultServer()
 
     @BeforeAll fun initialize(@TempDir tempDirPath: Path) {
-        listOf("dir_1", "dir_2", "dir_3")
-            .map(tempDirPath::resolve)
-            .forEach(Files::createDirectory)
+        Files.write(Files.createDirectory(tempDirPath.resolve("subDir")).resolve("textFile.txt"), TEXT_FILE_CONTENT.toByteArray(Charsets.UTF_8))
 
         with (server) {
             keyPairProvider = SimpleGeneratorHostKeyProvider()
@@ -83,7 +82,14 @@ class SftpTest {
             }
         }
 
-        assertEquals(setOf("/", "/dir_1", "/dir_2", "/dir_3"), files)
+        assertEquals(setOf("/", "/subDir"), files)
+    }
+
+    @Test fun testReadFiles() {
+        FileSystems.newFileSystem(URI.create("sftp://user@localhost"), mapOf(SftpConfiguration.PropertyNames.PORT to server.port)).use { fileSystem ->
+            val textFileContent = Files.readString(fileSystem.getPath("/subDir/textFile.txt"), Charsets.UTF_8)
+            assertEquals(TEXT_FILE_CONTENT, textFileContent)
+        }
     }
 
 }
