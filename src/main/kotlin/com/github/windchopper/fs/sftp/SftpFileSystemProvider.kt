@@ -59,11 +59,7 @@ class SftpFileSystemProvider: FileSystemProvider() {
 
     override fun getFileSystem(uri: URI): FileSystem {
         with (SftpConfiguration(uri)) {
-            if (connectedFileSystems.containsKey(sessionIdentity)) {
-                return connectedFileSystems[sessionIdentity]!!
-            }
-
-            throw FileSystemNotFoundException("File system not connected to ${sessionIdentity}")
+            return connectedFileSystems[sessionIdentity]?:throw FileSystemNotFoundException("File system not connected to ${sessionIdentity}")
         }
     }
 
@@ -102,12 +98,18 @@ class SftpFileSystemProvider: FileSystemProvider() {
         TODO("not implemented")
     }
 
-    @Throws(IOException::class) @Suppress("NAME_SHADOWING") override fun isSameFile(path1st: Path, path2nd: Path): Boolean {
-        TODO("not implemented")
+    @Throws(IOException::class) override fun isSameFile(path1st: Path, path2nd: Path): Boolean {
+        if (path1st.fileSystem !== path2nd.fileSystem) {
+            throw ProviderMismatchException("Mismatched file system providers for ${path1st} and ${path2nd}")
+        }
+
+        return (path1st.fileSystem as? SftpFileSystem)
+            ?.let { fileSystem -> fileSystem.realPath(path1st.toString()) == fileSystem.realPath(path2nd.toString()) }
+            ?:foreignPathError(path1st)
     }
 
     @Throws(IOException::class) override fun isHidden(path: Path): Boolean {
-        TODO("not implemented")
+        return false
     }
 
     @Throws(IOException::class) override fun getFileStore(path: Path): FileStore {
@@ -122,20 +124,28 @@ class SftpFileSystemProvider: FileSystemProvider() {
         TODO("not implemented")
     }
 
-    @Throws(IOException::class) @Suppress("UNCHECKED_CAST") override fun <A: BasicFileAttributes> readAttributes(path: Path, attributesType: Class<A>, vararg linkOptions: LinkOption): A {
-        return (path.fileSystem as? SftpFileSystem)
-            ?.let {
-                if (attributesType == BasicFileAttributes::class.java || attributesType == SftpFileAttributes::class.java) {
-                    it.view(path.toString()).toFileAttributes() as A
-                } else {
-                    throw UnsupportedOperationException("Attributes of type ${attributesType.canonicalName} not supported")
-                }
-            }
-            ?:foreignPathError(path)
+    @Throws(IOException::class) override fun <A: BasicFileAttributes> readAttributes(path: Path, attributesType: Class<A>, vararg linkOptions: LinkOption): A {
+        if (attributesType != BasicFileAttributes::class.java && attributesType != SftpFileAttributes::class.java) {
+            throw UnsupportedOperationException("Type ${attributesType.canonicalName} not supported")
+        }
+
+        return (path.fileSystem as? SftpFileSystem)?.view(path.toString())?.toFileAttributes()
+            ?.let(attributesType::cast)?:foreignPathError(path)
     }
 
     override fun readAttributes(path: Path, attributes: String, vararg linkOptions: LinkOption): Map<String, Any> {
-        TODO("not implemented")
+        with (readAttributes(path, SftpFileAttributes::class.java, *linkOptions)) {
+            return mapOf(
+                "fileKey" to fileKey(),
+                "size" to size(),
+                "lastModifiedTime" to lastModifiedTime(),
+                "lastAccessTime" to lastAccessTime(),
+                "creationTime" to creationTime(),
+                "regularFile" to isRegularFile,
+                "directory" to isDirectory,
+                "symbolicLink" to isSymbolicLink,
+                "other" to isOther)
+        }
     }
 
     override fun setAttribute(path: Path, s: String, value: Any, vararg linkOptions: LinkOption) {
