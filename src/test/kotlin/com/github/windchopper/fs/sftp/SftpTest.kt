@@ -8,13 +8,16 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
 import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
+import java.nio.file.InvalidPathException
 import java.nio.file.Path
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @TestInstance(Lifecycle.PER_CLASS)
 class SftpTest {
@@ -32,6 +35,7 @@ class SftpTest {
             keyPairProvider = SimpleGeneratorHostKeyProvider()
             subsystemFactories = listOf(SftpSubsystemFactory())
             fileSystemFactory = VirtualFileSystemFactory(tempDirPath)
+            boundAddresses
             passwordAuthenticator = PasswordAuthenticator { username, password, session ->
                 username == "user"
             }
@@ -47,14 +51,18 @@ class SftpTest {
     @Test fun testPaths() {
         FileSystems.newFileSystem(URI.create("sftp://user@localhost"), mapOf(SftpConfiguration.PropertyNames.PORT to server.port)).use { fileSystem ->
             val path = fileSystem.getPath("/home/user")
+            val relativePath = fileSystem.getPath("user")
+            val nonNormalizedPath = fileSystem.getPath("/home/../home/user/./directory")
+            val nonNormalizedInvalidPath = fileSystem.getPath("/../home/user")
+            val nonNormalizedNonAbsolutePath = fileSystem.getPath("../directory")
 
             assertEquals("/home/user", path.toString())
             assertEquals("/home", path.parent.toString())
             assertEquals("/", path.root.toString())
-
-            val relativePath = fileSystem.getPath("user")
-
             assertEquals("user", relativePath.toString())
+            assertEquals("/home/user/directory", nonNormalizedPath.normalize().toString())
+            assertEquals("../directory", nonNormalizedNonAbsolutePath.toString())
+            assertThrows<InvalidPathException>(nonNormalizedInvalidPath::normalize)
             assertTrue(path.startsWith(path.parent))
             assertTrue(path.startsWith(path.root))
             assertFalse(path.parent.startsWith(path))

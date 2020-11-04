@@ -75,16 +75,15 @@ class SftpFileSystemProvider: FileSystemProvider() {
         return getFileSystem(uri).getPath(uri.path)
     }
 
+    internal fun foreignPathError(path: Path): Nothing = throw ProviderMismatchException("Path ${this::class.qualifiedName} is not belonging " +
+        "to ${SftpFileSystemProvider::class.qualifiedName}")
+
     @Throws(IOException::class) override fun newByteChannel(path: Path, openOptionSet: Set<OpenOption>, vararg fileAttributes: FileAttribute<*>): SeekableByteChannel {
-        return path.toSftpPath().let {
-            it.fileSystem.newByteChannel(it)
-        }
+        return (path.fileSystem as? SftpFileSystem)?.newByteChannel(path)?:foreignPathError(path)
     }
 
     @Throws(IOException::class) override fun newDirectoryStream(path: Path, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {
-        return path.toSftpPath().let {
-            it.fileSystem.newDirectoryStream(it, filter)
-        }
+        return (path.fileSystem as? SftpFileSystem)?.newDirectoryStream(path, filter)?:foreignPathError(path)
     }
 
     @Throws(IOException::class) override fun createDirectory(path: Path, vararg fileAttributes: FileAttribute<*>?) {
@@ -124,13 +123,15 @@ class SftpFileSystemProvider: FileSystemProvider() {
     }
 
     @Throws(IOException::class) @Suppress("UNCHECKED_CAST") override fun <A: BasicFileAttributes> readAttributes(path: Path, attributesType: Class<A>, vararg linkOptions: LinkOption): A {
-        return path.toSftpPath().let {
-            if (attributesType == BasicFileAttributes::class.java || attributesType == SftpFileAttributes::class.java) {
-                it.fileSystem.view(it.toString()).toFileAttributes() as A
-            } else {
-                throw UnsupportedOperationException("Attributes of type ${attributesType.canonicalName} not supported")
+        return (path.fileSystem as? SftpFileSystem)
+            ?.let {
+                if (attributesType == BasicFileAttributes::class.java || attributesType == SftpFileAttributes::class.java) {
+                    it.view(path.toString()).toFileAttributes() as A
+                } else {
+                    throw UnsupportedOperationException("Attributes of type ${attributesType.canonicalName} not supported")
+                }
             }
-        }
+            ?:foreignPathError(path)
     }
 
     override fun readAttributes(path: Path, attributes: String, vararg linkOptions: LinkOption): Map<String, Any> {

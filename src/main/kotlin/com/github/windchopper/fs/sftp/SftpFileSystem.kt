@@ -7,7 +7,6 @@ import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.nio.channels.Channels
 import java.nio.channels.SeekableByteChannel
 import java.nio.file.*
 import java.nio.file.attribute.UserPrincipalLookupService
@@ -38,16 +37,19 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
             }
         })
 
-    fun view(path: String): SftpFile {
-        return viewBuffer[path]
-            ?:helper.performConnected { channel ->
-                fillInBuffers(path, channel.ls(path))
-                viewBuffer[path]
-            }
-            ?:throw FileNotFoundException(path)
+    fun view(pathString: String): SftpFile {
+        var bufferedView = viewBuffer[pathString]
+
+        if (bufferedView == null) bufferedView = helper.performConnected { channel ->
+            fillInBuffers(pathString, channel.ls(pathString))
+            viewBuffer[pathString]
+        }
+
+        return bufferedView
+            ?:throw FileNotFoundException(pathString)
     }
 
-    @Suppress("UNCHECKED_CAST") fun fillInBuffers(path: String, entries: Vector<*>): List<SftpFile> {
+    @Suppress("UNCHECKED_CAST") fun fillInBuffers(pathString: String, entries: Vector<*>): List<SftpFile> {
         val files: MutableList<SftpFile> = ArrayList(entries.size)
 
         (entries as Vector<LsEntry>)
@@ -56,9 +58,9 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
             }
             .map {
                 if (it.filename == ".") {
-                    SftpFile(path.substringBeforeLast(PATH_SEPARATOR), path.substringAfterLast(PATH_SEPARATOR), it.attrs)
+                    SftpFile(pathString.substringBeforeLast(PATH_SEPARATOR), pathString.substringAfterLast(PATH_SEPARATOR), it.attrs)
                 } else {
-                    SftpFile(path, it.filename, it.attrs)
+                    SftpFile(pathString, it.filename, it.attrs)
                         .let {
                             files.add(it)
                             it
@@ -69,7 +71,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
                 viewBuffer[it.toAbsolutePath()] = it
             }
 
-        listBuffer[path] = files
+        listBuffer[pathString] = files
         return files
     }
 
@@ -95,12 +97,12 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
         }
     }
 
-    fun newDirectoryStream(path: SftpPath, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {
+    fun newDirectoryStream(path: Path, filter: DirectoryStream.Filter<in Path?>): DirectoryStream<Path> {
         return SftpDirectoryStream(filter, list(path.toString())
             .map { it.toPath(this, configuration.sessionIdentity) })
     }
 
-    fun newByteChannel(path: SftpPath): SeekableByteChannel {
+    fun newByteChannel(path: Path): SeekableByteChannel {
         return helper.performConnected { channel ->
             // todo SftpFileChannel(helper, path)
             // full download for now

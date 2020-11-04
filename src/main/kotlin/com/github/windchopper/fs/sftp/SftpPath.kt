@@ -1,21 +1,66 @@
 package com.github.windchopper.fs.sftp
 
+import com.github.windchopper.fs.sftp.SftpConfiguration.SessionIdentity
 import java.io.IOException
 import java.net.URI
 import java.nio.file.*
-import java.util.*
 
-class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdentity: SftpConfiguration.SessionIdentity, private val absolute: Boolean, vararg pathElements: String): Path {
+data class ParsedPath(val absolute: Boolean, val elements: List<String>)
 
-    private val pathElements: Array<String> = arrayOf(*pathElements)
+@Throws(InvalidPathException::class) internal fun parse(vararg fragments: String): ParsedPath {
+    val elements = fragments
+        .flatMap { it.split(SftpFileSystem.PATH_SEPARATOR) }
+        .filter { it.isNotBlank() }
+        .toMutableList()
 
-    constructor(fileSystem: SftpFileSystem, connectionIdentity: SftpConfiguration.SessionIdentity, vararg pathElements: String): this(
-        fileSystem, connectionIdentity, pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR))
+    val absolute = fragments.firstOrNull()
+        ?.startsWith(SftpFileSystem.PATH_SEPARATOR) == true
 
-    constructor(fileSystem: SftpFileSystem, connectionIdentity: SftpConfiguration.SessionIdentity, pathString: String): this(
-        fileSystem, connectionIdentity, pathString.startsWith(SftpFileSystem.PATH_SEPARATOR), *pathString.split(SftpFileSystem.PATH_SEPARATOR)
-            .filter { it.isNotBlank() }
-            .toTypedArray())
+    return ParsedPath(absolute, elements)
+}
+
+internal fun toString(absolute: Boolean, pathElements: List<String>): String = pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR,
+    if (absolute) SftpFileSystem.PATH_SEPARATOR else "")
+
+@Throws(InvalidPathException::class) internal fun normalize(absolute: Boolean, elements: List<String>): ParsedPath {
+    val normalizedElements = ArrayList<String>()
+
+    for (index in elements.indices) {
+        val currentElement = elements[index]
+
+        if (currentElement == ".") continue else if (currentElement == "..") {
+            if (normalizedElements.isNotEmpty()) {
+                normalizedElements.removeLast()
+                continue
+            }
+
+            if (absolute) {
+                throw InvalidPathException(toString(absolute, elements),
+                    "No directory upper than root")
+            }
+        }
+
+        normalizedElements.add(currentElement)
+    }
+
+    return ParsedPath(absolute, normalizedElements)
+}
+
+internal fun Path.toParsedPath(): ParsedPath = (this as? SftpPath)
+    ?.toParsedPath()?: parse(this.toString())
+
+class SftpPath internal constructor(
+    private val fileSystem: SftpFileSystem,
+    private val sessionIdentity: SessionIdentity,
+    private val absolute: Boolean,
+    private val elements: List<String>)
+        : Path {
+
+    internal constructor(fileSystem: SftpFileSystem, sessionIdentity: SessionIdentity, parsedPath: ParsedPath): this(
+        fileSystem, sessionIdentity, parsedPath.absolute, parsedPath.elements)
+
+    constructor(fileSystem: SftpFileSystem, sessionIdentity: SessionIdentity, vararg elements: String): this(
+        fileSystem, sessionIdentity, parse(*elements))
 
     override fun getFileSystem(): SftpFileSystem {
         return fileSystem
@@ -26,53 +71,63 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun getRoot(): Path? {
-        return if (absolute && pathElements.isNotEmpty()) SftpPath(fileSystem, sessionIdentity, SftpFileSystem.PATH_SEPARATOR) else null
+        return if (absolute && elements.isNotEmpty()) {
+            SftpPath(fileSystem, sessionIdentity, true, emptyList())
+        } else {
+            null
+        }
     }
 
     override fun getFileName(): Path? {
-        return if (pathElements.isNotEmpty()) SftpPath(fileSystem, sessionIdentity, pathElements[pathElements.size - 1]) else null
+        return if (elements.isNotEmpty()) {
+            SftpPath(fileSystem, sessionIdentity, false, listOf(elements.last()))
+        } else {
+            null
+        }
     }
 
     override fun getParent(): Path? {
-        return if (pathElements.size > 1) {
-            SftpPath(fileSystem, sessionIdentity, absolute, *pathElements.copyOfRange(0, pathElements.size - 1))
-        } else if (pathElements.isNotEmpty() && absolute) {
-            SftpPath(fileSystem, sessionIdentity, SftpFileSystem.PATH_SEPARATOR)
-        } else null
+        return if (elements.size > 1) {
+            SftpPath(fileSystem, sessionIdentity, absolute, elements.subList(0, elements.size - 1))
+        } else if (elements.isNotEmpty() && absolute) {
+            SftpPath(fileSystem, sessionIdentity, true, listOf(SftpFileSystem.PATH_SEPARATOR))
+        } else {
+            null
+        }
     }
 
     override fun getNameCount(): Int {
-        return pathElements.size
+        return elements.size
     }
 
     override fun getName(index: Int): Path {
-        return if (index < pathElements.size) {
-            SftpPath(fileSystem, sessionIdentity, pathElements[index])
-        } else {
-            throw IllegalArgumentException("Index ${index} out of bounds (${pathElements.size})")
+        if (index in elements.indices) {
+            return SftpPath(fileSystem, sessionIdentity, false, listOf(elements[index]))
         }
+
+        throw IndexOutOfBoundsException(index)
     }
 
     override fun subpath(fromIndex: Int, toIndex: Int): Path {
-        return if (fromIndex >= 0) {
-            if (toIndex <= pathElements.size) {
-                SftpPath(fileSystem, sessionIdentity, *Arrays.copyOfRange(pathElements, fromIndex, toIndex))
-            } else {
-                throw IllegalArgumentException("End index ${toIndex} out of bounds (${pathElements.size})")
+        if (fromIndex in elements.indices) {
+            if (toIndex - 1 in elements.indices) {
+                return SftpPath(fileSystem, sessionIdentity, false, elements.subList(fromIndex, toIndex))
             }
-        } else {
-            throw IllegalArgumentException("Begin index ${fromIndex} out of bounds")
+
+            throw IndexOutOfBoundsException(toIndex)
         }
+
+        throw IndexOutOfBoundsException(fromIndex)
     }
 
     override fun startsWith(path: Path): Boolean {
-        return path.toSftpPath().let {
+        return path.toParsedPath().let { parsedPath ->
             var j = 0
-            val jcount = it.pathElements.size
+            val jcount = parsedPath.elements.size
             var i = 0
-            val icount = pathElements.size
+            val icount = elements.size
             while (i < icount && j < jcount) {
-                if (pathElements[i] != it.pathElements[j]) {
+                if (elements[i] != parsedPath.elements[j]) {
                     return false
                 }
                 i++
@@ -83,11 +138,11 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun endsWith(path: Path): Boolean {
-        return path.toSftpPath().let {
-            var j = it.pathElements.size
-            var i = pathElements.size
+        return path.toParsedPath().let { parsedPath ->
+            var j = parsedPath.elements.size
+            var i = elements.size
             while (--i >= 0 && --j >= 0) {
-                if (pathElements[i] != it.pathElements[j]) {
+                if (elements[i] != parsedPath.elements[j]) {
                     return false
                 }
             }
@@ -96,11 +151,12 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun normalize(): Path {
-        return SftpPath(fileSystem, sessionIdentity, toString())
+        val normalizedPath = normalize(absolute, elements)
+        return SftpPath(fileSystem, sessionIdentity, normalizedPath.absolute, normalizedPath.elements)
     }
 
     override fun resolve(path: Path): Path {
-        return SftpPath(fileSystem, sessionIdentity, *pathElements.plus(path.toSftpPath().pathElements))
+        return SftpPath(fileSystem, sessionIdentity, absolute, elements.plus(path.toParsedPath().elements))
     }
 
     override fun relativize(path: Path): Path {
@@ -108,11 +164,11 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
     }
 
     override fun toUri(): URI {
-        return URI(SftpFileSystem.SCHEME, sessionIdentity.username, sessionIdentity.host, sessionIdentity.port, pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR), null, null)
+        return URI(SftpFileSystem.SCHEME, sessionIdentity.username, sessionIdentity.host, sessionIdentity.port, elements.joinToString(SftpFileSystem.PATH_SEPARATOR), null, null)
     }
 
     override fun toAbsolutePath(): Path {
-        return if (absolute) this else SftpPath(fileSystem, sessionIdentity, toString(SftpFileSystem.PATH_SEPARATOR))
+        return if (absolute) this else SftpPath(fileSystem, sessionIdentity, true, elements)
     }
 
     @Throws(IOException::class) override fun toRealPath(vararg linkOptions: LinkOption): Path {
@@ -123,19 +179,17 @@ class SftpPath(private val fileSystem: SftpFileSystem, private val sessionIdenti
         throw UnsupportedOperationException("Couldn't watch remote file system")
     }
 
-    override fun compareTo(other: Path): Int {
-        return Arrays.compare(pathElements, other.toSftpPath().pathElements)
+    internal fun toParsedPath(): ParsedPath {
+        return ParsedPath(absolute, elements)
     }
 
-    fun toString(prefix: String): String {
-        return pathElements.joinToString(SftpFileSystem.PATH_SEPARATOR, prefix)
+    override fun compareTo(other: Path): Int {
+        return toString().compareTo(other.toString())
     }
 
     override fun toString(): String {
-        return toString(if (absolute) SftpFileSystem.PATH_SEPARATOR else "")
+        return toString(absolute, elements)
     }
 
 }
 
-fun Path.toSftpPath(): SftpPath = this as? SftpPath
-    ?:throw ProviderMismatchException("Path ${javaClass.canonicalName} is not belonging to ${SftpFileSystemProvider::class.simpleName}")
