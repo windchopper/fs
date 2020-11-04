@@ -26,10 +26,8 @@ class SftpPath internal constructor(
     }
 
     override fun getRoot(): Path? {
-        return if (parsedPath.absolute && parsedPath.elements.isNotEmpty()) {
-            SftpPath(fileSystem, sessionIdentity, ParsedPath(true, emptyList()))
-        } else {
-            null
+        return parsedPath.root()?.let {
+            SftpPath(fileSystem, sessionIdentity, it)
         }
     }
 
@@ -76,33 +74,11 @@ class SftpPath internal constructor(
     }
 
     override fun startsWith(path: Path): Boolean {
-        return path.toParsedPath().let { otherParsedPath ->
-            var otherPathElementIndex = 0
-            val otherPathElementCount = otherParsedPath.elements.size
-            var pathElementIndex = 0
-            val pathElementCount = parsedPath.elements.size
-            while (pathElementIndex < pathElementCount && otherPathElementIndex < otherPathElementCount) {
-                if (parsedPath.elements[pathElementIndex] != otherParsedPath.elements[otherPathElementIndex]) {
-                    return false
-                }
-                pathElementIndex++
-                otherPathElementIndex++
-            }
-            otherPathElementIndex == otherPathElementCount
-        }
+        return parsedPath.startsWith(path.toParsedPath())
     }
 
     override fun endsWith(path: Path): Boolean {
-        return path.toParsedPath().let { otherParsedPath ->
-            var otherPathElementIndex = otherParsedPath.elements.size
-            var pathElementIndex = parsedPath.elements.size
-            while (--pathElementIndex >= 0 && --otherPathElementIndex >= 0) {
-                if (parsedPath.elements[pathElementIndex] != otherParsedPath.elements[otherPathElementIndex]) {
-                    return false
-                }
-            }
-            otherPathElementIndex == -1
-        }
+        return parsedPath.endsWith(path.toParsedPath())
     }
 
     override fun normalize(): Path {
@@ -114,7 +90,7 @@ class SftpPath internal constructor(
     }
 
     override fun relativize(path: Path): Path {
-        TODO("not implemented")
+        return SftpPath(fileSystem, sessionIdentity, parsedPath.relativize(path.toParsedPath()))
     }
 
     override fun toUri(): URI {
@@ -122,7 +98,7 @@ class SftpPath internal constructor(
     }
 
     override fun toAbsolutePath(): Path {
-        return if (parsedPath.absolute) this else SftpPath(fileSystem, sessionIdentity, ParsedPath(true, parsedPath.elements))
+        return SftpPath(fileSystem, sessionIdentity, ParsedPath(true, parsedPath.elements))
     }
 
     @Throws(IOException::class) override fun toRealPath(vararg linkOptions: LinkOption): Path {

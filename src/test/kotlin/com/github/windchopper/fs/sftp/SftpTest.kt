@@ -17,6 +17,7 @@ import java.nio.file.InvalidPathException
 import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -35,7 +36,6 @@ class SftpTest {
             keyPairProvider = SimpleGeneratorHostKeyProvider()
             subsystemFactories = listOf(SftpSubsystemFactory())
             fileSystemFactory = VirtualFileSystemFactory(tempDirPath)
-            boundAddresses
             passwordAuthenticator = PasswordAuthenticator { username, password, session ->
                 username == "user"
             }
@@ -62,6 +62,9 @@ class SftpTest {
             assertEquals("user", relativePath.toString())
             assertEquals("/home/user/directory", nonNormalizedPath.normalize().toString())
             assertEquals("../directory", nonNormalizedNonAbsolutePath.toString())
+            assertEquals("/", path.root.toString())
+            assertNull(relativePath.root)
+            assertNull(nonNormalizedNonAbsolutePath.root)
             assertThrows<InvalidPathException>(nonNormalizedInvalidPath::normalize)
             assertTrue(path.startsWith(path.parent))
             assertTrue(path.startsWith(path.root))
@@ -69,6 +72,11 @@ class SftpTest {
             assertFalse(path.startsWith(relativePath))
             assertTrue(path.endsWith(relativePath))
             assertFalse(relativePath.startsWith(path))
+
+            val path1st = fileSystem.getPath("/dir1/dir2")
+            val path2nd = fileSystem.getPath("/dir2/dir3")
+
+            assertEquals("../../dir2/dir3", path1st.relativize(path2nd).toString())
         }
     }
 

@@ -75,7 +75,7 @@ class SftpFileSystemProvider: FileSystemProvider() {
         return getFileSystem(uri).getPath(uri.path)
     }
 
-    internal fun foreignPathError(path: Path): Nothing = throw ProviderMismatchException("Path ${this::class.qualifiedName} is not belonging " +
+    internal fun foreignPathError(path: Path): Nothing = throw ProviderMismatchException("Path ${path::class.qualifiedName} is not belonging " +
         "to ${SftpFileSystemProvider::class.qualifiedName}")
 
     @Throws(IOException::class) override fun newByteChannel(path: Path, openOptionSet: Set<OpenOption>, vararg fileAttributes: FileAttribute<*>): SeekableByteChannel {
