@@ -3,7 +3,6 @@ package com.github.windchopper.fs.internal
 import com.github.windchopper.fs.sftp.SftpFileSystem
 import java.nio.file.InvalidPathException
 import java.util.*
-import kotlin.collections.ArrayList
 
 class ParsedPath {
 
@@ -76,7 +75,6 @@ class ParsedPath {
             return other
         }
 
-        // common subsequence
         var sharedSubsequenceLength = 0
 
         for (i in 0 until elements.size.coerceAtMost(other.elements.size)) {
@@ -91,10 +89,7 @@ class ParsedPath {
         val otherExtraElements = if (other.elements.size <= sharedSubsequenceLength) emptyList() else other.elements.subList(sharedSubsequenceLength, other.elements.size)
         val parts: MutableList<String> = ArrayList(extraElements + otherExtraElements.size)
 
-        // add .. for each extra element in this path
         parts.addAll(Collections.nCopies(extraElements, ".."))
-
-        // add each extra element in the other path
         parts.addAll(otherExtraElements)
 
         return ParsedPath(false, parts)
