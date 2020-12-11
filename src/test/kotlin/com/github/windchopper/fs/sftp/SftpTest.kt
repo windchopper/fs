@@ -8,8 +8,6 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
 import java.net.URI
 import java.nio.file.FileSystems
@@ -17,8 +15,7 @@ import java.nio.file.Files
 import java.nio.file.InvalidPathException
 import java.nio.file.Path
 
-@TestInstance(Lifecycle.PER_CLASS)
-class SftpTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS) class SftpTest {
 
     companion object {
         const val TEXT_FILE_CONTENT = "Some short text here."
@@ -53,27 +50,27 @@ class SftpTest {
             val nonNormalizedInvalidPath = fileSystem.getPath("/../home/user")
             val nonNormalizedNonAbsolutePath = fileSystem.getPath("../directory")
 
-            assertEquals("/home/user", path.toString())
-            assertEquals("/home", path.parent.toString())
-            assertEquals("/", path.root.toString())
-            assertEquals("user", relativePath.toString())
-            assertEquals("/home/user/directory", nonNormalizedPath.normalize().toString())
-            assertEquals("../directory", nonNormalizedNonAbsolutePath.toString())
-            assertEquals("/", path.root.toString())
-            assertNull(relativePath.root)
-            assertNull(nonNormalizedNonAbsolutePath.root)
+            Assertions.assertEquals("/home/user", path.toString())
+            Assertions.assertEquals("/home", path.parent.toString())
+            Assertions.assertEquals("/", path.root.toString())
+            Assertions.assertEquals("user", relativePath.toString())
+            Assertions.assertEquals("/home/user/directory", nonNormalizedPath.normalize().toString())
+            Assertions.assertEquals("../directory", nonNormalizedNonAbsolutePath.toString())
+            Assertions.assertEquals("/", path.root.toString())
+            Assertions.assertNull(relativePath.root)
+            Assertions.assertNull(nonNormalizedNonAbsolutePath.root)
             assertThrows<InvalidPathException>(nonNormalizedInvalidPath::normalize)
-            assertTrue(path.startsWith(path.parent))
-            assertTrue(path.startsWith(path.root))
-            assertFalse(path.parent.startsWith(path))
-            assertFalse(path.startsWith(relativePath))
-            assertTrue(path.endsWith(relativePath))
-            assertFalse(relativePath.startsWith(path))
+            Assertions.assertTrue(path.startsWith(path.parent))
+            Assertions.assertTrue(path.startsWith(path.root))
+            Assertions.assertFalse(path.parent.startsWith(path))
+            Assertions.assertFalse(path.startsWith(relativePath))
+            Assertions.assertTrue(path.endsWith(relativePath))
+            Assertions.assertFalse(relativePath.startsWith(path))
 
             val path1st = fileSystem.getPath("/dir1/dir2")
             val path2nd = fileSystem.getPath("/dir2/dir3")
 
-            assertEquals("../../dir2/dir3", path1st.relativize(path2nd).toString())
+            Assertions.assertEquals("../../dir2/dir3", path1st.relativize(path2nd).toString())
         }
     }
 
@@ -95,13 +92,13 @@ class SftpTest {
             }
         }
 
-        assertEquals(setOf("/", "/subDir"), files)
+        Assertions.assertEquals(setOf("/", "/subDir"), files)
     }
 
     @Test fun testReadFiles() {
         FileSystems.newFileSystem(URI.create("sftp://user@localhost"), mapOf(SftpConfiguration.PropertyNames.PORT to server.port)).use { fileSystem ->
             val textFileContent = Files.readString(fileSystem.getPath("/subDir/textFile.txt"), Charsets.UTF_8)
-            assertEquals(TEXT_FILE_CONTENT, textFileContent)
+            Assertions.assertEquals(TEXT_FILE_CONTENT, textFileContent)
         }
     }
 
