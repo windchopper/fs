@@ -1,7 +1,6 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.internal.jsch.JSchHelper
-import com.github.windchopper.fs.internal.performConnected
 import com.github.windchopper.fs.internal.wrapExceptionTo
 import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
@@ -21,8 +20,9 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     }
 
-    val viewBuffer: MutableMap<String?, SftpFile> = LRUMap(configuration.bufferSize)
-    val listBuffer: MutableMap<String?, List<SftpFile>> = LRUMap(configuration.bufferSize)
+    val viewBuffer: MutableMap<String, SftpFile> = LRUMap()
+    val listBuffer: MutableMap<String, List<SftpFile>> = LRUMap()
+
     val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, wrapExceptionTo(::IOException) {
             with (configuration) {
                 with (sessionIdentity) {
@@ -56,22 +56,25 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
             .filter {
                 it.filename != ".."
             }
-            .map {
-                if (it.filename == ".") {
-                    SftpFile(pathString.substringBeforeLast(PATH_SEPARATOR), pathString.substringAfterLast(PATH_SEPARATOR), it.attrs)
+            .map { entry ->
+                if (entry.filename == ".") {
+                    SftpFile(pathString.substringBeforeLast(PATH_SEPARATOR), pathString.substringAfterLast(PATH_SEPARATOR), entry.attrs)
                 } else {
-                    SftpFile(pathString, it.filename, it.attrs)
-                        .let {
-                            files.add(it)
-                            it
+                    SftpFile(pathString, entry.filename, entry.attrs)
+                        .let { file ->
+                            files.add(file)
+                            file
                         }
                 }
             }
-            .forEach {
-                viewBuffer[it.toAbsolutePath()] = it
+            .forEach { file ->
+                with (file.toAbsolutePath()) {
+                    viewBuffer[this] = file
+                }
             }
 
         listBuffer[pathString] = files
+
         return files
     }
 

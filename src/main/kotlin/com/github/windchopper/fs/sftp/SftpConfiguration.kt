@@ -4,6 +4,7 @@ import com.github.windchopper.fs.internal.logger
 import com.github.windchopper.fs.internal.positive
 import java.net.URI
 import java.time.Duration
+import java.util.logging.Level
 import kotlin.reflect.KClass
 import kotlin.reflect.full.cast
 
@@ -34,10 +35,10 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
                 is String -> try {
                     value = stringReader.invoke(rawValue)
                 } catch (notParsed: Exception) {
-                    logger.error("Couldn't parse \"${name}\" value: ${rawValue}", notParsed)
+                    logger.log(Level.SEVERE, "Couldn't parse \"${name}\" value: ${rawValue}", notParsed)
                 }
                 else -> {
-                    logger.error("Couldn't admit \"${name}\" value: ${rawValue}")
+                    logger.log(Level.SEVERE, "Couldn't admit \"${name}\" value: ${rawValue}")
                 }
             }
 

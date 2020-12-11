@@ -1,13 +1,6 @@
 package com.github.windchopper.fs.internal
 
-import com.github.windchopper.fs.internal.jsch.JSchHelper
-import com.jcraft.jsch.Channel
-import org.apache.commons.lang3.StringUtils
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.io.IOException
-
-fun String.trimToNull(): String? = StringUtils.trimToNull(this)
+import java.util.logging.Logger
 
 fun Int.positive(): Int? = if (this < 0) {
     null
@@ -21,7 +14,7 @@ fun <T> ThreadLocal<T>.takeAway(): T? = get()
         it
     }
 
-inline fun <reified T> logger(): Logger = LoggerFactory.getLogger(T::class.java)
+inline fun <reified T> logger(): Logger = Logger.getLogger(T::class.qualifiedName)
 
 inline fun <R, reified E: Exception> wrapExceptionTo(wrapper: (thrown: Exception) -> E, expression: () -> R): R = try {
     expression.invoke()
@@ -31,15 +24,3 @@ inline fun <R, reified E: Exception> wrapExceptionTo(wrapper: (thrown: Exception
         else -> throw wrapper.invoke(thrown)
     }
 }
-
-fun <T, C: Channel> JSchHelper<C>.performConnected(action: (channel: C) -> T): T = wrapExceptionTo(::IOException) {
-    val channel = connect()
-
-    try {
-        action(channel)
-    } finally {
-        disconnect()
-    }
-}
-
-

@@ -1,8 +1,10 @@
 package com.github.windchopper.fs.internal.jsch
 
 import com.github.windchopper.fs.internal.takeAway
+import com.github.windchopper.fs.internal.wrapExceptionTo
 import com.jcraft.jsch.*
 import kotlinx.coroutines.*
+import java.io.IOException
 import java.time.Duration
 import kotlin.reflect.KClass
 
@@ -56,6 +58,18 @@ class JSchHelper<C: Channel>(val type: Type<C>, val channelInactivityDuration: D
                     channel.disconnect()
                 }
             })
+        }
+    }
+
+    fun <T> performConnected(action: (channel: C) -> T): T {
+        return wrapExceptionTo(::IOException) {
+            val channel = connect()
+
+            try {
+                action(channel)
+            } finally {
+                disconnect()
+            }
         }
     }
 
