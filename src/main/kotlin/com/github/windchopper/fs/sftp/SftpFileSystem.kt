@@ -1,7 +1,7 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.internal.jsch.JSchHelper
-import com.github.windchopper.fs.internal.wrapExceptionTo
+import com.github.windchopper.fs.internal.rethrow
 import com.jcraft.jsch.ChannelSftp.LsEntry
 import org.apache.commons.collections4.map.LRUMap
 import java.io.FileNotFoundException
@@ -23,7 +23,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     val viewBuffer: MutableMap<String, SftpFile> = LRUMap()
     val listBuffer: MutableMap<String, List<SftpFile>> = LRUMap()
 
-    val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, wrapExceptionTo(::IOException) {
+    val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, rethrow(::IOException) {
             with (configuration) {
                 with (sessionIdentity) {
                     provider.secureChannel.getSession(username, host, port)

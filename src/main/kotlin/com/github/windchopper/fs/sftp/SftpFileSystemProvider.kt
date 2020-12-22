@@ -1,8 +1,8 @@
 package com.github.windchopper.fs.sftp
 
 import com.github.windchopper.fs.internal.jsch.JSchLogger
+import com.github.windchopper.fs.internal.letRethrow
 import com.github.windchopper.fs.internal.logger
-import com.github.windchopper.fs.internal.wrapExceptionTo
 import com.jcraft.jsch.JSch
 import java.io.IOException
 import java.net.URI
@@ -24,17 +24,17 @@ class SftpFileSystemProvider: FileSystemProvider() {
 
         System.getProperty("user.home")
             ?.let { Paths.get(it).resolve(".ssh") }
-            ?.let {
-                wrapExceptionTo(::IOException) {
-                    listOf(it.resolve("id_rsa"), it.resolve("id_dsa"), it.resolve("id_ecdsa"))
-                        .filter { Files.exists(it) }
-                        .forEach { secureChannel.addIdentity(it.toRealPath().toString()) }
+            ?.letRethrow(::IOException) { path ->
+                listOf(path.resolve("id_rsa"), path.resolve("id_dsa"), path.resolve("id_ecdsa"))
+                    .filter(Files::exists)
+                    .map(Path::toRealPath)
+                    .map(Path::toString)
+                    .forEach(secureChannel::addIdentity)
 
-                    val knownHostsFile = it.resolve("known_hosts")
+                val knownHostsFile = path.resolve("known_hosts")
 
-                    if (Files.exists(knownHostsFile)) {
-                        secureChannel.setKnownHosts(knownHostsFile.toRealPath().toString())
-                    }
+                if (Files.exists(knownHostsFile)) {
+                    secureChannel.setKnownHosts(knownHostsFile.toRealPath().toString())
                 }
             }
     }
