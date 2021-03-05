@@ -4,35 +4,16 @@ import com.github.windchopper.fs.sftp.SftpFileSystem
 import java.nio.file.InvalidPathException
 import java.util.*
 
-class ParsedPath {
+class ParsedPath(val absolute: Boolean, val elements: List<String>) {
 
-    val absolute: Boolean
-    val elements: List<String>
-
-    constructor(absolute: Boolean, elements: List<String>) {
-        this.absolute = absolute
-        this.elements = elements
-    }
-
-    constructor(vararg fragments: String) {
-        elements = fragments
-            .flatMap { it.split(SftpFileSystem.PATH_SEPARATOR) }
-            .filter { it.isNotBlank() }
-            .toMutableList()
-        absolute = true == fragments.firstOrNull()
-            ?.startsWith(SftpFileSystem.PATH_SEPARATOR)
-    }
+    constructor(vararg fragments: String): this(true == fragments.firstOrNull()
+        ?.startsWith(SftpFileSystem.PATH_SEPARATOR), fragments
+            .flatMap(SftpFileSystem.PATH_SEPARATOR::useAsDelimiterForSplit)
+            .filter(String::isNotBlank)
+            .toList())
 
     fun root(): ParsedPath? {
-        return if (absolute) {
-            return if (elements.isNotEmpty()) {
-                ParsedPath(true, emptyList())
-            } else {
-                this
-            }
-        } else {
-            null
-        }
+        return absolute then (elements.isEmpty() then this?:ParsedPath(true, emptyList()))
     }
 
     fun startsWith(other: ParsedPath): Boolean {
@@ -87,7 +68,7 @@ class ParsedPath {
 
         val extraElements = 0.coerceAtLeast(elements.size - sharedSubsequenceLength)
         val otherExtraElements = if (other.elements.size <= sharedSubsequenceLength) emptyList() else other.elements.subList(sharedSubsequenceLength, other.elements.size)
-        val parts: MutableList<String> = ArrayList(extraElements + otherExtraElements.size)
+        val parts = ArrayList<String>(extraElements + otherExtraElements.size)
 
         parts.addAll(Collections.nCopies(extraElements, ".."))
         parts.addAll(otherExtraElements)
@@ -119,7 +100,7 @@ class ParsedPath {
     }
 
     override fun toString(): String {
-        return elements.joinToString(SftpFileSystem.PATH_SEPARATOR, if (absolute) SftpFileSystem.PATH_SEPARATOR else "")
+        return elements.joinToString(SftpFileSystem.PATH_SEPARATOR, absolute then SftpFileSystem.PATH_SEPARATOR?:"")
     }
 
     override fun hashCode(): Int {
