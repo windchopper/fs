@@ -4,9 +4,7 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.UndeclaredThrowableException
 import java.util.logging.Logger
 
-infix fun <T> Boolean.then(parameter: T): T? = if (this) parameter else null
-
-fun Int.positive(): Int? = (this >= 0) then this
+fun Int.positive(): Int? = if (this >= 0) this else null
 
 fun String.useAsDelimiterForSplit(string: String): List<String> = string.split(this)
 

@@ -13,7 +13,15 @@ class ParsedPath(val absolute: Boolean, val elements: List<String>) {
             .toList())
 
     fun root(): ParsedPath? {
-        return absolute then (elements.isEmpty() then this?:ParsedPath(true, emptyList()))
+        return if (absolute) {
+            return if (elements.isNotEmpty()) {
+                ParsedPath(true, emptyList())
+            } else {
+                this
+            }
+        } else {
+            null
+        }
     }
 
     fun startsWith(other: ParsedPath): Boolean {
@@ -100,7 +108,8 @@ class ParsedPath(val absolute: Boolean, val elements: List<String>) {
     }
 
     override fun toString(): String {
-        return elements.joinToString(SftpFileSystem.PATH_SEPARATOR, absolute then SftpFileSystem.PATH_SEPARATOR?:"")
+        return elements.joinToString(SftpFileSystem.PATH_SEPARATOR, (if (absolute) SftpFileSystem.PATH_SEPARATOR else null)
+            ?: "")
     }
 
     override fun hashCode(): Int {
