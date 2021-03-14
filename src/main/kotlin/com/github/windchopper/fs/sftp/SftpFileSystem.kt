@@ -20,10 +20,10 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     }
 
-    val viewBuffer: MutableMap<String, SftpFile> = LRUMap()
-    val listBuffer: MutableMap<String, List<SftpFile>> = LRUMap()
+    private val viewBuffer: MutableMap<String, SftpFile> = LRUMap()
+    private val listBuffer: MutableMap<String, List<SftpFile>> = LRUMap()
 
-    val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, rethrow(::IOException) {
+    private val helper = JSchHelper(JSchHelper.Type.SFTP, configuration.channelInactivityDuration, rethrow(::IOException) {
             with (configuration) {
                 with (sessionIdentity) {
                     provider.secureChannel.getSession(username, host, port)
@@ -88,12 +88,10 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
             }
     }
 
-    override fun provider(): SftpFileSystemProvider {
-        return provider
-    }
+    override fun provider() = provider
 
     @Throws(IOException::class) override fun close() {
-        helper.session.disconnect()
+        helper.disconnect(immediately = true)
         provider.retire(configuration.sessionIdentity, this)
         for (buffer in listOf(viewBuffer, listBuffer)) {
             buffer.clear()
@@ -107,9 +105,6 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
 
     fun newByteChannel(path: Path): SeekableByteChannel {
         return helper.performConnected { channel ->
-            // todo SftpFileChannel(helper, path)
-            // full download for now
-
             val tempFilePath = Files.createTempFile("sftp-", "-download")
 
             Files.newOutputStream(tempFilePath).use { outputStream ->
@@ -120,22 +115,14 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
         }
     }
 
-    override fun isOpen(): Boolean {
-        return helper.session.isConnected
-    }
+    override fun isOpen() = helper.connected()
 
-    override fun isReadOnly(): Boolean {
-        return false
-    }
+    override fun isReadOnly() = false
 
-    override fun getSeparator(): String {
-        return PATH_SEPARATOR
-    }
+    override fun getSeparator() = PATH_SEPARATOR
 
-    @Throws(IOException::class) fun realPath(path: String?): String {
-        return helper.performConnected {
-            it.realpath(path)
-        }
+    @Throws(IOException::class) fun realPath(path: String?): String = helper.performConnected {
+        it.realpath(path)
     }
 
     override fun getRootDirectories(): Iterable<Path> {
@@ -143,7 +130,7 @@ class SftpFileSystem(private val provider: SftpFileSystemProvider, private val c
     }
 
     override fun getFileStores(): Iterable<FileStore> {
-        TODO("not implemented")
+        return listOf(SftpFileStore(configuration.sessionIdentity.toString(), this))
     }
 
     override fun supportedFileAttributeViews(): Set<String> {

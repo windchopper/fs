@@ -11,8 +11,8 @@ import kotlin.reflect.full.cast
 class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String, Any>()) {
 
     internal open class Property<T: Any>(
-        val name: String,
-        val type: KClass<T>,
+        private val name: String,
+        private val type: KClass<T>,
         private val stringReader: (String) -> T? = { type.cast(it) },
         private val uriReader: ((URI) -> T?)? = null) {
 
@@ -54,7 +54,7 @@ class SftpConfiguration(uri: URI, environment: Map<String, *> = emptyMap<String,
     internal class DefaultedProperty<T: Any>(
         name: String,
         type: KClass<T>,
-        val defaultValue: T,
+        private val defaultValue: T,
         stringReader: (String) -> T? = { type.cast(it) },
         uriReader: ((URI) -> T?)? = null)
             : Property<T>(name, type, stringReader, uriReader) {

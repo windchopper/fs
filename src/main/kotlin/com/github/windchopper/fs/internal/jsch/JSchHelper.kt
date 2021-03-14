@@ -1,14 +1,14 @@
 package com.github.windchopper.fs.internal.jsch
 
-import com.github.windchopper.fs.internal.takeAway
 import com.github.windchopper.fs.internal.rethrow
+import com.github.windchopper.fs.internal.takeAway
 import com.jcraft.jsch.*
 import kotlinx.coroutines.*
 import java.io.IOException
 import java.time.Duration
 import kotlin.reflect.KClass
 
-class JSchHelper<C: Channel>(val type: Type<C>, val channelInactivityDuration: Duration, val session: Session) {
+class JSchHelper<C: Channel>(private val type: Type<C>, private val channelInactivityDuration: Duration, private val session: Session) {
 
     class Type<C: Channel> internal constructor(val code: String, val type: KClass<C>) {
 
@@ -28,8 +28,8 @@ class JSchHelper<C: Channel>(val type: Type<C>, val channelInactivityDuration: D
 
     }
 
-    val disconnectionJobThreadLocal = ThreadLocal<Job>()
-    val channelThreadLocal = ThreadLocal<C>()
+    private val disconnectionJobThreadLocal = ThreadLocal<Job>()
+    private val channelThreadLocal = ThreadLocal<C>()
 
     @Suppress("UNCHECKED_CAST") fun connect(): C {
         disconnectionJobThreadLocal.takeAway()
@@ -47,10 +47,14 @@ class JSchHelper<C: Channel>(val type: Type<C>, val channelInactivityDuration: D
                 }
     }
 
-    fun disconnect() {
-        val channel = channelThreadLocal.get()
+    fun connected(): Boolean {
+        return channelThreadLocal.get()?.isConnected?:false
+    }
 
-        with (GlobalScope) {
+    fun disconnect(immediately: Boolean = false) {
+        val channel = channelThreadLocal.get()?:return
+
+        if (immediately) channel.disconnect() else with (GlobalScope) {
             disconnectionJobThreadLocal.set(async {
                 delay(channelInactivityDuration.toMillis())
 
